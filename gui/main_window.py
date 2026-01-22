@@ -22,7 +22,3 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(central)
         self.setStatusBar(QStatusBar())
-app=QApplication(sys.argv)
-main_window=MainWindow()
-main_window.show()
-app.exec()
