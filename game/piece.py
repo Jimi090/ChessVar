@@ -8,4 +8,4 @@ class Piece:
         else:
             self.color = "white"
     def __str__(self):
-        return f"Piece {self.type} {self.color} {self.col} {self.row}"
+        return f"Piece {self.symbol} {self.col} {self.row}"
