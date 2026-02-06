@@ -1,25 +1,35 @@
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QStatusBar, QApplication
-)
-import sys
-from gui.board_widget import ChessBoardWidget
-from gui.side_panel import SidePanel
+from PySide6.QtWidgets import QMainWindow, QStackedWidget
+from gui.main_menu import MainMenu
+from gui.game_widget import GameWidget
+from game.game import GameState
+import chess
+import chess.variant
 
 class MainWindow(QMainWindow):
-    def __init__(self,game):
+    def __init__(self):
         super().__init__()
-        self.game = game
+
         self.setWindowTitle("ChessVar")
-        self.resize(1000,700)
+        self.resize(1000, 700)
 
-        central=QWidget()
-        layout = QHBoxLayout(central)
+        self.stack = QStackedWidget()
+        self.setCentralWidget(self.stack)
 
-        self.board = ChessBoardWidget(game)
-        self.side_panel = SidePanel()
+        self.menu = MainMenu()
+        self.stack.addWidget(self.menu)
 
-        layout.addWidget(self.board,stretch=3)
-        layout.addWidget(self.side_panel,stretch=1)
+        self.menu.start_btn.clicked.connect(self.start_game)
 
-        self.setCentralWidget(central)
-        self.setStatusBar(QStatusBar())
+    def start_game(self):
+        mode = self.menu.mode_combo.currentText()
+        variant_name = self.menu.variant_combo.currentText().lower()
+        bot_level = self.menu.bot_combo.currentText()
+
+        game = GameState(chess, variant_name)
+        game.vs_bot = "Bot" in mode
+        game.bot_level = bot_level
+        game.player_pov = "White"
+
+        self.game_widget = GameWidget(game)
+        self.stack.addWidget(self.game_widget)
+        self.stack.setCurrentWidget(self.game_widget)

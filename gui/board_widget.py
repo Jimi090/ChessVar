@@ -80,8 +80,9 @@ class ChessBoardWidget(QGraphicsView):
             self.game.make_move(move,new_sym)
             fen = self.game.board.board_fen()
             self.render_position(fen, self.game.player_pov)
-            self.after_move()
-            self.start_bot_move()
+            game_over = self.after_move()
+            if not game_over:
+                self.start_bot_move()
             return True
         else:
             return False
@@ -133,7 +134,6 @@ class ChessBoardWidget(QGraphicsView):
             self.game.is_first_move = False
             self.start_bot_move()
 
-
     def on_piece_dropped(self, item, scene_pos):
         size = self.square_size
 
@@ -159,7 +159,7 @@ class ChessBoardWidget(QGraphicsView):
     def after_move(self):
         result = self.game.get_game_result()
         if not result:
-            return
+            return False
 
         if result["type"] == "win":
             title = f"{result['winner']} wins!"
@@ -175,6 +175,7 @@ class ChessBoardWidget(QGraphicsView):
         self.overlay.show()
 
         self.overlay.new_game_btn.clicked.connect(self.new_game)
+        return True
 
     def new_game(self):
         if self.overlay:
@@ -186,6 +187,8 @@ class ChessBoardWidget(QGraphicsView):
             self.game.player_pov = "Black"
         elif(self.game.player_pov == "Black"):
             self.game.player_pov = "White"
+        self.game.is_first_move = True
+
         self.render_position(self.game.board.board_fen(), self.game.player_pov)
 
     def start_bot_move(self):
