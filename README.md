@@ -1,6 +1,4 @@
 - resign option
-- draw option(bot accepts if position bad)
-- dots when figure is clicked(show legal moves)
 
 
 
