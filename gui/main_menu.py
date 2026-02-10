@@ -1,63 +1,3 @@
-'''from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton,
-    QComboBox, QSpinBox, QHBoxLayout
-)
-from PySide6.QtCore import Qt
-
-class MainMenu(QWidget):
-    def __init__(self):
-        super().__init__()
-
-        layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(20)
-
-        title = QLabel("ChessVar")
-        title.setStyleSheet("font-size: 32px; font-weight: bold;")
-        title.setAlignment(Qt.AlignCenter)
-
-        # -------- GAME MODE --------
-        self.mode_combo = QComboBox()
-        self.mode_combo.addItems(["Player vs Bot", "Player vs Player"])
-
-        # -------- VARIANT --------
-        self.variant_combo = QComboBox()
-        self.variant_combo.addItems([
-            "Normal",
-            "Atomic",
-            "Horde",
-            "Antichess",
-            "King of the Hill"
-        ])
-
-        # -------- BOT LEVEL --------
-        self.bot_level = QSpinBox()
-        self.bot_level.setRange(1, 10)
-        self.bot_level.setValue(3)
-
-        # hide bot level if PvP
-        self.mode_combo.currentTextChanged.connect(
-            lambda mode: self.bot_level.setVisible("Bot" in mode)
-        )
-
-        start_btn = QPushButton("Start Game")
-        start_btn.setFixedSize(200, 45)
-
-        layout.addWidget(title)
-        layout.addWidget(QLabel("Game Mode"))
-        layout.addWidget(self.mode_combo)
-
-        layout.addWidget(QLabel("Variant"))
-        layout.addWidget(self.variant_combo)
-
-        layout.addWidget(QLabel("Bot Difficulty"))
-        layout.addWidget(self.bot_level)
-
-        layout.addWidget(start_btn, alignment=Qt.AlignCenter)
-
-        self.start_btn = start_btn
-'''
-
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton,
     QComboBox, QFrame
@@ -152,17 +92,6 @@ class MainMenu(QWidget):
         ])
 
         # -------- BOT DIFFICULTY --------
-        '''bot_label = QLabel("Bot Difficulty")
-        bot_label.setProperty("class", "section")
-
-        self.bot_combo = QComboBox()
-        self.bot_combo.addItems(["Easy", "Medium", "Hard"])
-
-        # hide bot difficulty in PvP
-        self.mode_combo.currentTextChanged.connect(
-            lambda mode: self.bot_combo.setVisible("Bot" in mode)
-        )
-        bot_label.setVisible(True)'''
         self.bot_label = QLabel("Bot Difficulty")
         self.bot_label.setProperty("class", "section")
 

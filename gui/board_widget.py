@@ -14,6 +14,7 @@ import chess
 import chess.engine
 import chess.variant
 from game.bot_worker import BotWorker
+import random
 
 class ChessBoardWidget(QGraphicsView):
     def __init__(self,game):
@@ -82,7 +83,7 @@ class ChessBoardWidget(QGraphicsView):
             self.render_position(fen, self.game.player_pov)
             game_over = self.after_move()
             if not game_over:
-                self.start_bot_move()
+                self.start_bot_move(self.game.bot_level)
             return True
         else:
             return False
@@ -132,7 +133,7 @@ class ChessBoardWidget(QGraphicsView):
                 row-=1;
         if self.game.player_pov == "Black" and self.game.is_first_move:
             self.game.is_first_move = False
-            self.start_bot_move()
+            self.start_bot_move(self.game.bot_level)
 
     def on_piece_dropped(self, item, scene_pos):
         size = self.square_size
@@ -191,16 +192,34 @@ class ChessBoardWidget(QGraphicsView):
 
         self.render_position(self.game.board.board_fen(), self.game.player_pov)
 
-    def start_bot_move(self):
-        engine_path = "engines/fairy-stockfish"
+    def start_bot_move(self,level):
+        if(level=="Easy"):
+            moves = self.game.list_legal_moves()
+            moves2=[];
+            for i in moves:
+                moves2.append(i)
+            move = moves2[random.randrange(0, len(moves2))]
+            self.on_bot_move(move)
+        elif(level=="Medium"):
+            engine_path = "engines/fairy-stockfish"
 
-        self.bot_worker = BotWorker(
-            self.game.board,
-            engine_path,
-            time_limit=0.00000000000000000
-        )
-        self.bot_worker.move_ready.connect(self.on_bot_move)
-        self.bot_worker.start()
+            self.bot_worker = BotWorker(
+                self.game.board,
+                engine_path,
+                time_limit=0.0000000001
+            )
+            self.bot_worker.move_ready.connect(self.on_bot_move)
+            self.bot_worker.start()
+        elif (level == "Hard"):
+            engine_path = "engines/fairy-stockfish"
+
+            self.bot_worker = BotWorker(
+                self.game.board,
+                engine_path,
+                time_limit=0.5
+            )
+            self.bot_worker.move_ready.connect(self.on_bot_move)
+            self.bot_worker.start()
 
     def on_bot_move(self, move):
         self.game.apply_bot_move(move)
