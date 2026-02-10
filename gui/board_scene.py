@@ -22,7 +22,16 @@ class BoardScene(QGraphicsScene):
             row=7-row
         item = self.itemAt(pos, self.views()[0].transform())
 
-        if isinstance(item, PieceItem) and not self.board.selected_piece:
+        if isinstance(item, PieceItem):
+            if self.board.selected_piece and item.piece != self.board.selected_piece:
+                if self.board.move_piece(self.board.selected_piece, col, row):
+                    self.board.selected_piece = None
+                    self.board.clear_legal_move_markers()
+                else:
+                    self.board.select_piece(item.piece)
+                event.accept()
+                return
+
             self.board.select_piece(item.piece)
             self.drag_item = item
             self.drag_offset = item.pos() - pos
@@ -38,6 +47,7 @@ class BoardScene(QGraphicsScene):
                 row
             )
             self.board.selected_piece = None
+            self.board.clear_legal_move_markers()
             event.accept()
             return
 

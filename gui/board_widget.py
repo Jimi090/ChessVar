@@ -1,4 +1,4 @@
-from PySide6.QtGui import QColor,QBrush
+from PySide6.QtGui import QColor,QBrush,QPen
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication
 from PySide6.QtCore import Qt
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
@@ -22,6 +22,7 @@ class ChessBoardWidget(QGraphicsView):
         self.game = game
         self.square_size = 80
         self.selected_piece = None
+        self.legal_move_markers = []
         self.scene = BoardScene(self)
         self.setScene(self.scene)
         size = self.square_size * 8
@@ -57,9 +58,60 @@ class ChessBoardWidget(QGraphicsView):
 
     def select_piece(self,piece):
         self.selected_piece = piece
+        self.show_legal_moves(piece)
+
+    def clear_legal_move_markers(self):
+        for marker in self.legal_move_markers:
+            self.scene.removeItem(marker)
+        self.legal_move_markers.clear()
+
+    def show_legal_moves(self, piece):
+        self.clear_legal_move_markers()
+        from_col, from_row = piece.col, piece.row
+
+        if self.game.player_pov == "Black":
+            from_col = 7 - from_col
+            from_row = 7 - from_row
+
+        from_square = chess.square(from_col, from_row)
+        normal_marker_size = self.square_size * 0.22
+        normal_marker_offset = (self.square_size - normal_marker_size) / 2
+
+        capture_marker_size = self.square_size * 0.66
+        capture_marker_offset = (self.square_size - capture_marker_size) / 2
+
+        for move in self.game.board.legal_moves:
+            if move.from_square != from_square:
+                continue
+
+            target_col = chess.square_file(move.to_square)
+            target_row = chess.square_rank(move.to_square)
+
+            if self.game.player_pov == "Black":
+                target_col = 7 - target_col
+                target_row = 7 - target_row
+
+            is_capture = self.game.board.is_capture(move)
+            marker_size = capture_marker_size if is_capture else normal_marker_size
+            marker_offset = capture_marker_offset if is_capture else normal_marker_offset
+            marker_pen = QPen(QColor(255, 255, 255, 220), 3) if is_capture else QPen(Qt.NoPen)
+            marker_brush = QBrush(QColor(235, 70, 70, 150)) if is_capture else QBrush(QColor(35, 95, 35, 170))
+
+            marker = self.scene.addEllipse(
+                target_col * self.square_size + marker_offset,
+                (7 - target_row) * self.square_size + marker_offset,
+                marker_size,
+                marker_size,
+                pen=marker_pen,
+                brush=marker_brush
+            )
+            marker.setAcceptedMouseButtons(Qt.NoButton)
+            marker.setZValue(0.5)
+            self.legal_move_markers.append(marker)
 
     def move_piece(self,piece,col,row):
         if not self.is_valid_square(col, row):
+            self.clear_legal_move_markers()
             return
         if self.game.player_pov == "White":
             move=[str(piece.col)+str(piece.row),str(col)+str(row)]
@@ -79,6 +131,7 @@ class ChessBoardWidget(QGraphicsView):
         if(self.game.is_move_legal(self.game.change_format(move)+new_sym) or\
         (self.game.is_move_legal(self.game.change_format(move)) and not can_be_promoted) ):
             self.game.make_move(move,new_sym)
+            self.clear_legal_move_markers()
             fen = self.game.board.board_fen()
             self.render_position(fen, self.game.player_pov)
             game_over = self.after_move()
@@ -86,10 +139,12 @@ class ChessBoardWidget(QGraphicsView):
                 self.start_bot_move(self.game.bot_level)
             return True
         else:
+            self.clear_legal_move_markers()
             return False
 
     def render_position(self,FEN,color="White"):
         self.scene.clear()
+        self.legal_move_markers.clear()
         self.draw_board()
         alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         numbers="0123456789"
