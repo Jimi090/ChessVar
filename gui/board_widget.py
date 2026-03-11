@@ -1,6 +1,6 @@
 from PySide6.QtGui import QColor,QBrush,QPen
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtSvgWidgets import QGraphicsSvgItem
 from PySide6.QtWidgets import QGraphicsScene
 
@@ -17,6 +17,7 @@ from game.bot_worker import BotWorker
 import random
 
 class ChessBoardWidget(QGraphicsView):
+    move_played = Signal()
     def __init__(self,game):
         super().__init__()
         self.game = game
@@ -27,6 +28,7 @@ class ChessBoardWidget(QGraphicsView):
         self.setScene(self.scene)
         size = self.square_size * 8
         self.scene.setSceneRect(0, 0, size, size)
+        self.interaction_enabled = True
 
     def draw_board(self):
         colors = ["#EEEED2","#769656"]
@@ -57,7 +59,7 @@ class ChessBoardWidget(QGraphicsView):
         piece.graphics_item=item
 
     def is_piece_selectable(self, piece):
-        if piece is None:
+        if not self.interaction_enabled or piece is None:
             return False
 
         is_white_piece = piece.symbol.isupper()
@@ -122,6 +124,9 @@ class ChessBoardWidget(QGraphicsView):
             self.legal_move_markers.append(marker)
 
     def move_piece(self,piece,col,row):
+        if not self.interaction_enabled:
+            self.clear_legal_move_markers()
+            return False
         if not self.is_valid_square(col, row):
             self.clear_legal_move_markers()
             return
@@ -151,6 +156,7 @@ class ChessBoardWidget(QGraphicsView):
             game_over = self.after_move()
             if self.game.vs_bot and not game_over:
                 self.start_bot_move(self.game.bot_level)
+            self.move_played.emit()
             return True
         else:
             self.clear_legal_move_markers()
@@ -254,6 +260,7 @@ class ChessBoardWidget(QGraphicsView):
             self.overlay = None
 
         self.game.board.reset()
+        self.interaction_enabled = True
         if(self.game.player_pov == "White"):
             self.game.player_pov = "Black"
         elif(self.game.player_pov == "Black"):
@@ -296,6 +303,7 @@ class ChessBoardWidget(QGraphicsView):
         fen = self.game.board.board_fen()
         self.render_position(fen, self.game.player_pov)
         self.after_move()
+        self.move_played.emit()
 
 
 

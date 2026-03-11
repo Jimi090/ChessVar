@@ -1,95 +1,106 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QListWidget, QListWidgetItem, QComboBox, QSpinBox, QSlider
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QListWidget,
+    QListWidgetItem,
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, Signal
+
 
 class SidePanel(QWidget):
+    new_game_requested = Signal()
+    back_to_menu_requested = Signal()
+    previous_move_requested = Signal()
+    next_move_requested = Signal()
+    export_fen_requested = Signal()
+    export_pgn_requested = Signal()
+    history_jump_requested = Signal(int)
+
     def __init__(self, game=None):
         super().__init__()
-        self.game = game  # możesz podpiąć GameState
+        self.game = game
 
-        self.setFixedWidth(300)  # szerokość panelu
+        self.setFixedWidth(320)
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignTop)
-        layout.setSpacing(15)
+        layout.setSpacing(12)
 
-        # -------------------- GAME CONTROL --------------------
+        self.back_to_menu_btn = QPushButton("Main Menu")
+        self.back_to_menu_btn.setFixedHeight(38)
+        layout.addWidget(self.back_to_menu_btn)
+
         self.new_game_btn = QPushButton("New Game")
-        self.new_game_btn.setFixedHeight(40)
+        self.new_game_btn.setFixedHeight(38)
         layout.addWidget(self.new_game_btn)
 
-        # -------------------- CURRENT PLAYER --------------------
         self.current_player_label = QLabel("Current Turn: White")
         self.current_player_label.setAlignment(Qt.AlignCenter)
-        self.current_player_label.setStyleSheet("font-weight: bold; font-size: 14pt;")
+        self.current_player_label.setStyleSheet("font-weight: bold; font-size: 13pt;")
         layout.addWidget(self.current_player_label)
 
-        # -------------------- MATERIAL COUNT --------------------
-        self.material_label = QLabel("Material Count:\nWhite: 16  Black: 16")
-        self.material_label.setAlignment(Qt.AlignLeft)
+        self.material_label = QLabel("Material: Equal")
+        self.material_label.setWordWrap(True)
         layout.addWidget(self.material_label)
 
-        # -------------------- MOVE HISTORY --------------------
         layout.addWidget(QLabel("Move History:"))
         self.move_list = QListWidget()
-        self.move_list.setFixedHeight(250)
+        self.move_list.setFixedHeight(260)
         layout.addWidget(self.move_list)
 
-        # strzałki do poruszania po historii
         nav_layout = QHBoxLayout()
         self.prev_btn = QPushButton("◀")
         self.next_btn = QPushButton("▶")
-        self.prev_btn.setFixedSize(QSize(50, 30))
-        self.next_btn.setFixedSize(QSize(50, 30))
+        self.prev_btn.setFixedSize(QSize(55, 30))
+        self.next_btn.setFixedSize(QSize(55, 30))
         nav_layout.addWidget(self.prev_btn)
         nav_layout.addWidget(self.next_btn)
         layout.addLayout(nav_layout)
 
-        # eksport historii
-        self.export_btn = QPushButton("Export PGN")
-        self.export_btn.setFixedHeight(30)
-        layout.addWidget(self.export_btn)
+        export_label = QLabel("Export game:")
+        layout.addWidget(export_label)
 
-        # -------------------- GAME VARIANT --------------------
-        layout.addWidget(QLabel("Game Variant:"))
-        self.variant_combo = QComboBox()
-        self.variant_combo.addItems(["Normal", "Antichess", "Horde", "King of the Hill"])
-        layout.addWidget(self.variant_combo)
-
-        # -------------------- AI LEVEL --------------------
-        layout.addWidget(QLabel("Bot Difficulty:"))
-        self.ai_level_spin = QSpinBox()
-        self.ai_level_spin.setRange(1, 10)
-        self.ai_level_spin.setValue(3)
-        layout.addWidget(self.ai_level_spin)
-
-        # -------------------- TIMER --------------------
-        layout.addWidget(QLabel("Timer (optional):"))
-        self.timer_slider = QSlider(Qt.Horizontal)
-        self.timer_slider.setRange(0, 60)  # w minutach
-        self.timer_slider.setValue(10)
-        layout.addWidget(self.timer_slider)
+        export_layout = QHBoxLayout()
+        self.export_fen_btn = QPushButton("Export FEN")
+        self.export_pgn_btn = QPushButton("Export PGN")
+        export_layout.addWidget(self.export_fen_btn)
+        export_layout.addWidget(self.export_pgn_btn)
+        layout.addLayout(export_layout)
 
         layout.addStretch()
 
-        # -------------------- SIGNALS --------------------
-        # kliknięcie na ruch w historii
         self.move_list.itemClicked.connect(self.on_history_click)
+        self.back_to_menu_btn.clicked.connect(self.back_to_menu_requested.emit)
+        self.new_game_btn.clicked.connect(self.new_game_requested.emit)
+        self.prev_btn.clicked.connect(self.previous_move_requested.emit)
+        self.next_btn.clicked.connect(self.next_move_requested.emit)
+        self.export_fen_btn.clicked.connect(self.export_fen_requested.emit)
+        self.export_pgn_btn.clicked.connect(self.export_pgn_requested.emit)
 
-    # -------------------- PLACEHOLDER METHODS --------------------
     def on_history_click(self, item: QListWidgetItem):
-        print("Clicked move:", item.text())
+        ply_index = item.data(Qt.UserRole)
+        if ply_index is not None:
+            self.history_jump_requested.emit(ply_index)
 
-    # aktualizacja obecnego gracza
     def set_current_player(self, player: str):
         self.current_player_label.setText(f"Current Turn: {player}")
 
-    # aktualizacja materiału
-    def set_material_count(self, white: int, black: int):
-        self.material_label.setText(f"Material Count:\nWhite: {white}  Black: {black}")
+    def set_material_advantage(self, text: str):
+        self.material_label.setText(text)
 
-    # dodanie ruchu do historii
-    def add_move_to_history(self, move_text: str):
-        self.move_list.addItem(move_text)
-        self.move_list.scrollToBottom()
+    def set_move_history(self, moves_with_ply, selected_ply):
+        self.move_list.clear()
+        for label, ply in moves_with_ply:
+            item = QListWidgetItem(label)
+            item.setData(Qt.UserRole, ply)
+            self.move_list.addItem(item)
+            if ply == selected_ply:
+                item.setSelected(True)
+                self.move_list.scrollToItem(item)
+
+        has_moves = len(moves_with_ply) > 0
+        self.prev_btn.setEnabled(has_moves and selected_ply > 0)
+        self.next_btn.setEnabled(has_moves and selected_ply < len(moves_with_ply))
+

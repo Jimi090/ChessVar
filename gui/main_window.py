@@ -30,6 +30,8 @@ class MainWindow(QMainWindow):
         game.bot_level = bot_level
         game.player_pov = "White"
 
-        self.game_widget = GameWidget(game)
+        self.game_widget = GameWidget(game,back_to_menu_callback=self.show_main_menu)
         self.stack.addWidget(self.game_widget)
         self.stack.setCurrentWidget(self.game_widget)
+    def show_main_menu(self):
+        self.stack.setCurrentWidget(self.menu)
