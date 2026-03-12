@@ -91,6 +91,13 @@ class MainMenu(QWidget):
             "King of the Hill"
         ])
 
+        # -------- SIDE --------
+        side_label = QLabel("Play as")
+        side_label.setProperty("class", "section")
+
+        self.side_combo = QComboBox()
+        self.side_combo.addItems(["White", "Black"])
+
         # -------- BOT DIFFICULTY --------
         self.bot_label = QLabel("Bot Difficulty")
         self.bot_label.setProperty("class", "section")
@@ -116,6 +123,9 @@ class MainMenu(QWidget):
 
         layout.addWidget(variant_label)
         layout.addWidget(self.variant_combo)
+
+        layout.addWidget(side_label)
+        layout.addWidget(self.side_combo)
 
         layout.addWidget(self.bot_label)
         layout.addWidget(self.bot_combo)

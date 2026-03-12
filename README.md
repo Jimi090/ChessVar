@@ -1,6 +1,4 @@
 To do:
-- możliwość zamknięcia okna z przyciskiem new game po skonczonej partii
-- funkcja rysowania strzałek i zaznaczania pól
 - dodanie i ulepszenie istniejących trybów gry
 
 

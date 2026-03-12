@@ -11,8 +11,25 @@ class BoardScene(QGraphicsScene):
         self.drag_offset = QPointF()
         self.drag_started = False
 
+        self.annotation_start = None
+        self.annotation_dragged = False
+
+    def scene_pos_to_board_square(self, scene_pos):
+        return self.board.scene_pos_to_board_square(scene_pos)
+
     def mousePressEvent(self, event):
         pos = event.scenePos()
+
+        if event.button() == Qt.LeftButton and (self.board.highlighted_squares or self.board.arrows):
+            self.board.clear_annotations()
+
+        if event.button() == Qt.RightButton:
+            square = self.scene_pos_to_board_square(pos)
+            if square is not None:
+                self.annotation_start = square
+                self.annotation_dragged = False
+                event.accept()
+                return
         size = self.board.square_size
 
         col = int(pos.x() // size)
@@ -49,10 +66,14 @@ class BoardScene(QGraphicsScene):
             self.board.clear_legal_move_markers()
             event.accept()
             return
-
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        if self.annotation_start is not None and event.buttons() & Qt.RightButton:
+            self.annotation_dragged = True
+            event.accept()
+            return
+
         if self.drag_item:
             self.drag_started = True
             self.drag_item.setPos(event.scenePos() + self.drag_offset)
@@ -62,6 +83,19 @@ class BoardScene(QGraphicsScene):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        if event.button() == Qt.RightButton and self.annotation_start is not None:
+            end_square = self.board.scene_pos_to_board_square(event.scenePos())
+            if end_square is not None:
+                if self.annotation_dragged and end_square != self.annotation_start:
+                    self.board.toggle_arrow(self.annotation_start, end_square)
+                else:
+                    self.board.toggle_square_highlight(end_square)
+
+            self.annotation_start = None
+            self.annotation_dragged = False
+            event.accept()
+            return
+
         if self.drag_item and self.drag_started:
             self.board.on_piece_dropped(self.drag_item, event.scenePos())
 

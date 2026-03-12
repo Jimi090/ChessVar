@@ -24,11 +24,12 @@ class MainWindow(QMainWindow):
         mode = self.menu.mode_combo.currentText()
         variant_name = self.menu.variant_combo.currentText().lower()
         bot_level = self.menu.bot_combo.currentText()
+        selected_side = self.menu.side_combo.currentText()
 
         game = GameState(chess, variant_name)
         game.vs_bot = "Bot" in mode
         game.bot_level = bot_level
-        game.player_pov = "White"
+        game.player_pov = selected_side
 
         self.game_widget = GameWidget(game,back_to_menu_callback=self.show_main_menu)
         self.stack.addWidget(self.game_widget)

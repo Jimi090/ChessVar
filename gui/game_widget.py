@@ -5,7 +5,6 @@ from gui.side_panel import SidePanel
 import chess
 import chess.pgn
 
-
 class GameWidget(QWidget):
     PIECE_VALUES = {
         chess.PAWN: 1,
@@ -49,10 +48,13 @@ class GameWidget(QWidget):
         self.refresh_sidebar()
 
     def start_new_game(self):
+        self.board.close_overlay()
         self.game.board.reset()
         self.game.is_first_move = True
         self.review_index = 0
         self.board.interaction_enabled = True
+        self.game.player_pov = "Black" if self.game.player_pov == "White" else "White"
+        self.board.clear_annotations()
         self.board.render_position(self.game.board.board_fen(), self.game.player_pov)
         self.refresh_sidebar()
 

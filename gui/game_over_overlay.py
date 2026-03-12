@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QFrame
+    QWidget, QVBoxLayout, QLabel, QPushButton, QFrame, QHBoxLayout
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
@@ -26,8 +26,36 @@ class GameOverOverlay(QWidget):
 
         card = QVBoxLayout(container)
         card.setAlignment(Qt.AlignCenter)
-        card.setSpacing(25)
+        card.setSpacing(18)
         card.setContentsMargins(30, 30, 30, 30)
+
+        header_container = QWidget(container)
+        header_container.setStyleSheet("""
+        QWidget {
+        background-color: #2b2b2b;
+        }
+        """)
+        header = QHBoxLayout(header_container)
+        header.setContentsMargins(0,0,0,0)
+        header.addStretch()
+
+        close_btn = QPushButton("x")
+        close_btn.setFixedSize(34,34)
+        close_btn.setCursor(Qt.PointingHandCursor)
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3a3a3a;
+                color: #dddddd;
+                border: none;
+                border-radius: 17px;
+                font-size: 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover { background-color: #4a4a4a; }
+            QPushButton:pressed { background-color: #303030; }
+        """)
+        close_btn.clicked.connect(self.close)
+        header.addWidget(close_btn)
 
         title = QLabel(title_text)
         title.setAlignment(Qt.AlignCenter)
@@ -54,6 +82,7 @@ class GameOverOverlay(QWidget):
             QPushButton:pressed { background-color: #5c7f45; }
         """)
 
+        card.addWidget(header_container)
         card.addWidget(title)
         card.addWidget(reason)
         card.addStretch()
@@ -61,3 +90,4 @@ class GameOverOverlay(QWidget):
 
         root.addWidget(container)
         self.new_game_btn = btn
+        self.close_btn = close_btn
