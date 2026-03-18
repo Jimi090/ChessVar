@@ -64,7 +64,7 @@ class GameOverOverlay(QWidget):
 
         reason = QLabel(reason_text)
         reason.setAlignment(Qt.AlignCenter)
-        reason.setFont(QFont("Arial", 16))
+        reason.setFont(QFont("Arial", 14))
         reason.setStyleSheet("color: #cccccc;")
 
         btn = QPushButton("New Game")

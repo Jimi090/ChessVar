@@ -38,10 +38,7 @@ class GameWidget(QWidget):
         self.side_panel.history_jump_requested.connect(self.jump_to_ply)
         self.side_panel.export_fen_requested.connect(self.export_fen)
         self.side_panel.export_pgn_requested.connect(self.export_pgn)
-        self.side_panel.pocket_piece_selected.connect(self.board.select_drop_piece)
-        self.side_panel.pocket_selection_cleared.connect(self.board.clear_drop_selection)
         self.board.move_played.connect(self.on_move_played)
-        self.board.selection_changed.connect(self.refresh_sidebar)
 
         self.refresh_sidebar()
 
@@ -58,7 +55,6 @@ class GameWidget(QWidget):
         self.board.interaction_enabled = True
         self.game.player_pov = "Black" if self.game.player_pov == "White" else "White"
         self.board.clear_annotations()
-        self.board.clear_drop_selection()
         self.board.render_position(self.game.get_display_fen(), self.game.player_pov)
         self.refresh_sidebar()
 
@@ -93,14 +89,6 @@ class GameWidget(QWidget):
         self.side_panel.set_current_player(current_turn)
         self.side_panel.set_material_advantage(self._material_text(current_board))
 
-        selected_drop_piece = self.board.selected_drop_piece if self.review_index == len(
-            self.game.board.move_stack) else None
-        self.side_panel.set_pocket_pieces(
-            self.game.get_pocket_counts(current_board.turn, current_board) if self.game.supports_drops() else {},
-            self.game.supports_drops() and self.review_index == len(self.game.board.move_stack),
-            selected_drop_piece,
-        )
-
         with QSignalBlocker(self.side_panel.move_list):
             self.side_panel.set_move_history(self._history_rows(), self.review_index)
 
@@ -122,14 +110,7 @@ class GameWidget(QWidget):
         else:
             advantage = f"Material advantage: Black +{abs(diff)}"
 
-        if self.game.supports_drops() and hasattr(board, "pockets"):
-            white_reserve = sum(board.pockets[chess.WHITE].count(piece_type) for piece_type in self.PIECE_VALUES)
-            black_reserve = sum(board.pockets[chess.BLACK].count(piece_type) for piece_type in self.PIECE_VALUES)
-            reserve_text = f"\nReserve: White {white_reserve} | Black {black_reserve}"
-        else:
-            reserve_text = ""
-
-        return f"{advantage}\nWhite: {white_score} | Black: {black_score}{reserve_text}"
+        return f"{advantage}\nWhite: {white_score} | Black: {black_score}"
 
     def jump_to_ply(self, ply_index):
         self.review_index = max(0, min(ply_index, len(self.game.board.move_stack)))
@@ -148,7 +129,6 @@ class GameWidget(QWidget):
     def _render_review_position(self):
         board_to_render = self._board_at(self.review_index)
         self.board.interaction_enabled = self.review_index == len(self.game.board.move_stack)
-        self.board.clear_drop_selection()
         self.board.render_position(self.game.get_display_fen(board_to_render), self.game.player_pov)
         self.refresh_sidebar()
 

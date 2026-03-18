@@ -39,11 +39,6 @@ class BoardScene(QGraphicsScene):
             row=7-row
         item = self.itemAt(pos, self.views()[0].transform())
 
-        if event.button() == Qt.LeftButton and self.board.selected_drop_piece is not None and not isinstance(item, PieceItem):
-            if self.board.drop_piece(col, row):
-                event.accept()
-                return
-
         if isinstance(item, PieceItem):
             if self.board.selected_piece and item.piece != self.board.selected_piece:
                 if self.board.move_piece(self.board.selected_piece, col, row):

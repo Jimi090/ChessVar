@@ -13,14 +13,12 @@ import random
 
 class ChessBoardWidget(QGraphicsView):
     move_played = Signal()
-    selection_changed = Signal()
 
     def __init__(self, game):
         super().__init__()
         self.game = game
         self.square_size = 80
         self.selected_piece = None
-        self.selected_drop_piece = None
         self.legal_move_markers = []
         self.overlay = None
         self.annotation_items = []
@@ -70,28 +68,12 @@ class ChessBoardWidget(QGraphicsView):
         return is_white_piece == is_white_turn
 
     def select_piece(self, piece):
-        self.clear_drop_selection()
         if not self.is_piece_selectable(piece):
             return False
 
         self.selected_piece = piece
         self.show_legal_moves(piece)
         return True
-
-    def select_drop_piece(self, piece_type):
-        if not self.interaction_enabled or not self.game.supports_drops():
-            return
-        self.selected_piece = None
-        self.selected_drop_piece = piece_type
-        self.show_drop_moves(piece_type)
-        self.selection_changed.emit()
-
-    def clear_drop_selection(self):
-        drop_was_selected = self.selected_drop_piece is not None
-        self.selected_drop_piece = None
-        self.clear_legal_move_markers()
-        if drop_was_selected:
-            self.selection_changed.emit()
 
     def clear_legal_move_markers(self):
         for marker in self.legal_move_markers:
@@ -248,7 +230,6 @@ class ChessBoardWidget(QGraphicsView):
         marker.setZValue(0.5)
         self.legal_move_markers.append(marker)
 
-
     def show_legal_moves(self, piece):
         self.clear_legal_move_markers()
         from_col, from_row = piece.col, piece.row
@@ -260,22 +241,13 @@ class ChessBoardWidget(QGraphicsView):
         from_square = chess.square(from_col, from_row)
 
         for move in self.game.board.legal_moves:
-            if move.drop is not None or move.from_square != from_square:
+            if move.from_square != from_square:
                 continue
 
             target_col = chess.square_file(move.to_square)
             target_row = chess.square_rank(move.to_square)
             is_capture = self.game.board.is_capture(move)
             self._add_marker(target_col, target_row, is_capture)
-
-    def show_drop_moves(self, piece_type):
-        self.clear_legal_move_markers()
-        for move in self.game.board.legal_moves:
-            if move.drop != piece_type:
-                continue
-            target_col = chess.square_file(move.to_square)
-            target_row = chess.square_rank(move.to_square)
-            self._add_marker(target_col, target_row, False)
 
     def _render_current_position(self):
         self.render_position(self.game.get_display_fen(), self.game.player_pov)
@@ -284,7 +256,6 @@ class ChessBoardWidget(QGraphicsView):
         self.clear_legal_move_markers()
         self.clear_annotations()
         self.selected_piece = None
-        self.selected_drop_piece = None
         if not self.game.vs_bot:
             self.game.player_pov = "White" if self.game.board.turn == chess.WHITE else "Black"
         self._render_current_position()
@@ -324,19 +295,6 @@ class ChessBoardWidget(QGraphicsView):
         self.clear_legal_move_markers()
         return False
 
-    def drop_piece(self, col, row):
-        if not self.interaction_enabled or self.selected_drop_piece is None:
-            self.clear_legal_move_markers()
-            return False
-        if not self.is_valid_square(col, row):
-            self.clear_legal_move_markers()
-            return False
-        if self.game.make_drop_move(self.selected_drop_piece, col, row):
-            return self._finalize_successful_move()
-
-        self.clear_legal_move_markers()
-        return False
-
     def render_position(self, FEN, color="White"):
         self.scene.clear()
         self.clear_legal_move_markers()
@@ -347,16 +305,7 @@ class ChessBoardWidget(QGraphicsView):
         numbers = "0123456789"
         col = 0
         row = 7
-        skip_reserve = False
         for i in FEN:
-            if i == "[":
-                skip_reserve = True
-                continue
-            if i == "]":
-                skip_reserve = False
-                continue
-            if skip_reserve or i == "~":
-                continue
             if i in alphabet:
                 PIECE_MAP = {
                     "k": "blackKing",
@@ -365,7 +314,6 @@ class ChessBoardWidget(QGraphicsView):
                     "b": "blackBishop",
                     "n": "blackKnight",
                     "p": "blackPawn",
-
                     "K": "whiteKing",
                     "Q": "whiteQueen",
                     "R": "whiteRook",
@@ -452,7 +400,6 @@ class ChessBoardWidget(QGraphicsView):
         self.game.reset_board()
         self.interaction_enabled = True
         self.clear_annotations()
-        self.clear_drop_selection()
         if self.game.player_pov == "White":
             self.game.player_pov = "Black"
         elif self.game.player_pov == "Black":
@@ -492,7 +439,6 @@ class ChessBoardWidget(QGraphicsView):
     def on_bot_move(self, move):
         self.game.apply_bot_move(move)
         self.clear_annotations()
-        self.clear_drop_selection()
         self._render_current_position()
         self.after_move()
         self.move_played.emit()

@@ -12,7 +12,6 @@ class GameState:
         "king of the hill": chess.variant.KingOfTheHillBoard,
         "horde": chess.variant.HordeBoard,
         "three-check": chess.variant.ThreeCheckBoard,
-        "crazyhouse": chess.variant.CrazyhouseBoard,
     }
     VARIANT_NAMES = {
         "standard": "Standard",
@@ -24,7 +23,6 @@ class GameState:
         "king of the hill": "King Of The Hill",
         "horde": "Horde",
         "three-check": "Three-check",
-        "crazyhouse": "Crazyhouse",
     }
     TERMINATION_LABELS = {
         "CHECKMATE": "Checkmate",
@@ -37,13 +35,6 @@ class GameState:
         "VARIANT_WIN": "Variant win",
         "VARIANT_LOSS": "Variant loss",
         "VARIANT_DRAW": "Variant draw",
-    }
-    DROP_PIECE_ORDER = {
-        chess.PAWN,
-        chess.KNIGHT,
-        chess.BISHOP,
-        chess.ROOK,
-        chess.QUEEN,
     }
 
     def __init__(self,chess_module,variant):
@@ -80,7 +71,6 @@ class GameState:
             "three-check": "three-check",
             "three check": "three-check",
             "threecheck": "three-check",
-            "crazyhouse": "crazyhouse",
         }
         return aliases.get(normalized, "standard")
 
@@ -121,35 +111,6 @@ class GameState:
             self.print_game_state()
             return True
         return False
-
-    def _build_drop_move(self, piece_type, col, row):
-        return chess.Move(to_square=chess.square(col, row), drop=piece_type)
-
-    def supports_drops(self):
-        return self.variant == "crazyhouse" and hasattr(self.board, "pockets")
-
-    def is_drop_legal(self, piece_type, col, row):
-        if not self.supports_drops():
-            return False
-        move = self._build_drop_move(piece_type, col, row)
-        return move in self.board.legal_moves
-
-    def make_drop_move(self, piece_type, col, row):
-        if not self.is_drop_legal(piece_type, col, row):
-            return False
-        self.board.push(self._build_drop_move(piece_type, col, row))
-        self.print_game_state()
-        return True
-
-    def get_pocket_counts(self, color, board=None):
-        if not self.supports_drops():
-            return {}
-        board = board or self.board
-        pocket = board.pockets[color]
-        return {
-            piece_type: pocket.count(piece_type)
-            for piece_type in self.DROP_PIECE_ORDER
-        }
 
     def get_display_fen(self, board=None):
         board = board or self.board
@@ -202,11 +163,6 @@ class GameState:
             "three-check": {
                 "VARIANT_WIN": "Three checks delivered",
                 "VARIANT_LOSS": "Three checks delivered",
-                "VARIANT_DRAW": "Variant draw",
-            },
-            "crazyhouse": {
-                "VARIANT_WIN": "Variant win",
-                "VARIANT_LOSS": "Variant loss",
                 "VARIANT_DRAW": "Variant draw",
             },
         }
