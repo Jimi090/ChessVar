@@ -84,11 +84,16 @@ class MainMenu(QWidget):
 
         self.variant_combo = QComboBox()
         self.variant_combo.addItems([
-            "Normal",
-            "Atomic",
-            "Horde",
+            "Standard",
+            "Suicide",
+            "Giveaway",
             "Antichess",
-            "King of the Hill"
+            "Atomic",
+            "King of the Hill",
+            "Horde",
+            "Three-check",
+            "Crazyhouse",
+
         ])
 
         # -------- SIDE --------
