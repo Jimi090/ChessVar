@@ -1,7 +1,7 @@
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QLabel
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton
 from PySide6.QtSvgWidgets import QSvgWidget
-from PySide6.QtCore import QSize
+from utils.path_utils import resource_path
+
 
 class PromotionDialog(QDialog):
     def __init__(self,color,parent=None):
@@ -12,10 +12,11 @@ class PromotionDialog(QDialog):
         layout = QHBoxLayout(self)
 
         PIECE_MAP = {
-            'q': f"assets/{color}Queen.svg",
-            'r': f"assets/{color}Rook.svg",
-            'b': f"assets/{color}Bishop.svg",
-            'n': f"assets/{color}Knight.svg"
+            'q': resource_path(f"assets/{color}Queen.svg"),
+            'r': resource_path(f"assets/{color}Rook.svg"),
+            'b': resource_path(f"assets/{color}Bishop.svg"),
+            'n': resource_path(f"assets/{color}Knight.svg")
+
         }
 
         for sym,path in PIECE_MAP.items():

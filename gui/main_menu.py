@@ -17,16 +17,6 @@ class MainMenu(QWidget):
             "• Capturing is mandatory whenever a capture is available.\n"
             "• Check and checkmate do not matter in this variant."
         ),
-        "Giveaway": (
-            "Giveaway follows the same spirit as Suicide: lose all your pieces before your opponent does.\n\n"
-            "• Captures are compulsory.\n"
-            "• Kings have no royal status, so check is ignored."
-        ),
-        "Antichess": (
-            "Antichess is another losing-chess variant where you try to get rid of all your pieces first.\n\n"
-            "• If a capture is available, you must capture.\n"
-            "• The king is treated like an ordinary piece, without check restrictions."
-        ),
         "Atomic": (
             "Captures cause an explosion that removes the capturing piece, the captured piece and every adjacent non-pawn piece.\n\n"
             "• Kings may not move into explosion range.\n"
@@ -37,10 +27,20 @@ class MainMenu(QWidget):
             "• Bring your king to one of the four central squares (d4, e4, d5, e5) to win.\n"
             "• Checkmate is still a valid way to win as well."
         ),
+        "Giveaway": (
+            "Giveaway follows the same spirit as Suicide: lose all your pieces before your opponent does.\n\n"
+            "• Captures are compulsory.\n"
+            "• Kings have no royal status, so check is ignored."
+        ),
         "Horde": (
             "White starts with a large horde of pawns, while Black has the normal setup.\n\n"
             "• White wins by overwhelming Black.\n"
             "• Black wins by eliminating the entire horde."
+        ),
+        "Antichess": (
+            "Antichess is another losing-chess variant where you try to get rid of all your pieces first.\n\n"
+            "• If a capture is available, you must capture.\n"
+            "• The king is treated like an ordinary piece, without check restrictions."
         ),
         "Three-check": (
             "Standard chess rules apply, but each side also tracks delivered checks.\n\n"
@@ -188,10 +188,8 @@ class MainMenu(QWidget):
         layout.addWidget(mode_label)
         layout.addWidget(self.mode_combo)
 
-        layout.addWidget(variant_label)
-        layout.addWidget(self.variant_combo)
-
         layout.addLayout(variant_header)
+        layout.addWidget(self.variant_combo)
         layout.addWidget(side_label)
         layout.addWidget(self.side_combo)
 

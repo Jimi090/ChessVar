@@ -108,7 +108,6 @@ class GameState:
         uci_move = self.change_format(move) + pawn_promotion_symbol
         if self.is_move_legal(uci_move):
             self.board.push(chess.Move.from_uci(uci_move))
-            self.print_game_state()
             return True
         return False
 
@@ -136,8 +135,8 @@ class GameState:
                 "VARIANT_DRAW": "Variant draw",
             },
             "giveaway": {
-                "VARIANT_WIN": "All pieces given away or no legal moves available",
-                "VARIANT_LOSS": "Opponent gave away all pieces or has no legal moves",
+                "VARIANT_WIN": "All pieces lost or no legal moves available",
+                "VARIANT_LOSS": "Opponent lost all pieces or has no legal moves",
                 "VARIANT_DRAW": "Variant draw",
             },
             "antichess": {

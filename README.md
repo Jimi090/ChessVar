@@ -58,8 +58,10 @@ ChessVar/
 ├── engines/                 # Embedded chess engine binaries
 ├── game/                    # Core game state and bot worker logic
 ├── gui/                     # Main interface, board widgets, dialogs, overlays
+├── utils/                   # Utilities files
 ├── main.py                  # Application entry point
 └── README.md
+
 ```
 
 ## Asset Credit

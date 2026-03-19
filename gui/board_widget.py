@@ -1,7 +1,7 @@
 from PySide6.QtGui import QColor, QBrush, QPen, QPolygonF
 from PySide6.QtWidgets import QGraphicsView
 from PySide6.QtCore import Qt, Signal, QPointF
-
+from utils.path_utils import ensure_executable, resource_path
 from gui.game_over_overlay import GameOverOverlay
 from gui.piece_item import PieceItem
 from game.piece import Piece
@@ -324,12 +324,12 @@ class ChessBoardWidget(QGraphicsView):
                 if color == "White":
                     self.add_piece(
                         Piece(col, row, i),
-                        "assets/" + PIECE_MAP[i] + ".svg"
+                        resource_path("assets/" + PIECE_MAP[i] + ".svg")
                     )
                 elif color == "Black":
                     self.add_piece(
                         Piece(7 - col, 7 - row, i),
-                        "assets/" + PIECE_MAP[i] + ".svg"
+                        resource_path("assets/" + PIECE_MAP[i] + ".svg")
                     )
                 col += 1
                 if col == 8:
@@ -416,7 +416,7 @@ class ChessBoardWidget(QGraphicsView):
             move = moves[random.randrange(0, len(moves))]
             self.on_bot_move(move)
         elif level == "Medium":
-            engine_path = "engines/fairy-stockfish"
+            engine_path = ensure_executable(resource_path("engines/fairy-stockfish"))
 
             self.bot_worker = BotWorker(
                 self.game.board,
@@ -426,7 +426,7 @@ class ChessBoardWidget(QGraphicsView):
             self.bot_worker.move_ready.connect(self.on_bot_move)
             self.bot_worker.start()
         elif level == "Hard":
-            engine_path = "engines/fairy-stockfish"
+            engine_path = ensure_executable(resource_path("engines/fairy-stockfish"))
 
             self.bot_worker = BotWorker(
                 self.game.board,
