@@ -13,6 +13,7 @@ import random
 
 class ChessBoardWidget(QGraphicsView):
     move_played = Signal()
+    interaction_blocked = Signal(str)
     BOT_LEVEL_SETTINGS = {
         "Beginner": {"strategy": "random", "think_time": 0.0},
         "Novice": {"strategy": "engine", "think_time": 0.00001},
@@ -37,7 +38,11 @@ class ChessBoardWidget(QGraphicsView):
         size = self.square_size * 8
         self.scene.setSceneRect(0, 0, size, size)
         self.interaction_enabled = True
+        self.interaction_block_reason = None
         self._bot_animation_timer = None
+        self._history_animation_timer = None
+        self._bot_workers = set()
+        self._bot_request_id = 0
 
     def draw_board(self):
         colors = ["#EEEED2", "#769656"]
@@ -77,6 +82,8 @@ class ChessBoardWidget(QGraphicsView):
 
     def select_piece(self, piece):
         if not self.is_piece_selectable(piece):
+            if not self.interaction_enabled:
+                self.interaction_blocked.emit(self.interaction_block_reason or "busy")
             return False
 
         self.selected_piece = piece
@@ -276,6 +283,7 @@ class ChessBoardWidget(QGraphicsView):
     def move_piece(self, piece, col, row):
         if not self.interaction_enabled:
             self.clear_legal_move_markers()
+            self.interaction_blocked.emit(self.interaction_block_reason or "busy")
             return False
         if not self.is_valid_square(col, row):
             self.clear_legal_move_markers()
@@ -403,10 +411,12 @@ class ChessBoardWidget(QGraphicsView):
             self.overlay = None
 
     def new_game(self):
+        self.cancel_pending_bot_moves()
         self.close_overlay()
 
         self.game.reset_board()
         self.interaction_enabled = True
+        self.interaction_block_reason = None
         self.clear_annotations()
         if self.game.player_pov == "White":
             self.game.player_pov = "Black"
@@ -417,6 +427,8 @@ class ChessBoardWidget(QGraphicsView):
         self.render_position(self.game.get_display_fen(), self.game.player_pov)
 
     def start_bot_move(self, level):
+        self.interaction_enabled = False
+        self.interaction_block_reason = "bot"
         level_config = self.BOT_LEVEL_SETTINGS.get(
             level,
             self.BOT_LEVEL_SETTINGS["Intermediate"],
@@ -425,24 +437,52 @@ class ChessBoardWidget(QGraphicsView):
         if strategy == "random":
             moves = list(self.game.list_legal_moves())
             if not moves:
+                self.interaction_enabled = True
+                self.interaction_block_reason = None
                 return
+            self._bot_request_id += 1
+            request_id = self._bot_request_id
             move = moves[random.randrange(0, len(moves))]
             self.on_bot_move(move)
             return
         engine_path = ensure_executable(resource_path("engines/fairy-stockfish"))
-        self.bot_worker = BotWorker(
+        worker = BotWorker(
             self.game.board,
             engine_path,
             time_limit=level_config["think_time"],
         )
-        self.bot_worker.move_ready.connect(self.on_bot_move)
-        self.bot_worker.start()
+        self._bot_workers.add(worker)
+
+        worker.finished.connect(lambda w=worker: self._cleanup_bot_worker(w))
+        worker.move_ready.connect(lambda move, rid=self._bot_request_id: self._on_bot_move_ready(rid, move))
+        worker.failed.connect(self._on_bot_worker_failed)
+        worker.start()
+
+    def _cleanup_bot_worker(self, worker):
+        self._bot_workers.discard(worker)
+        worker.deleteLater()
+
+    def _on_bot_move_ready(self, request_id, move):
+        if request_id != self._bot_request_id:
+            return
+        self.on_bot_move(move)
+
+    def _on_bot_worker_failed(self, _message):
+        self.interaction_enabled = True
+        self.interaction_block_reason = None
 
     def on_bot_move(self, move):
-        if move is None:
-            return
-        self.interaction_enabled = False
-        self.animate_bot_move(move)
+            if move is None:
+                self.interaction_enabled = True
+                self.interaction_block_reason = None
+                return
+            if move not in self.game.board.legal_moves:
+                self.interaction_enabled = True
+                self.interaction_block_reason = None
+                return
+            self.interaction_enabled = False
+            self.interaction_block_reason = "bot"
+            self.animate_bot_move(move)
 
     def animate_bot_move(self, move):
         moving_piece = self._piece_item_at_square(
@@ -490,6 +530,54 @@ class ChessBoardWidget(QGraphicsView):
     def _finish_bot_move(self, move):
         self.game.apply_bot_move(move)
         self.clear_annotations()
+        self.interaction_enabled = True
+        self.interaction_block_reason = None
         self._render_current_position()
         self.after_move()
         self.move_played.emit()
+
+    def cancel_pending_bot_moves(self):
+        self._bot_request_id += 1
+        if self._bot_animation_timer:
+            self._bot_animation_timer.stop()
+            self._bot_animation_timer.deleteLater()
+            self._bot_animation_timer = None
+        self.interaction_enabled = True
+        self.interaction_block_reason = None
+
+    def animate_history_move(self, from_col, from_row, to_col, to_row, on_finished):
+        moving_piece = self._piece_item_at_square(from_col, from_row)
+        if moving_piece is None:
+            on_finished()
+            return
+
+        target_x, target_y = self._board_square_to_scene_top_left(to_col, to_row)
+        start_pos = moving_piece.pos()
+        steps = 6
+        duration_ms = 90
+        interval_ms = max(1, duration_ms // steps)
+
+        if self._history_animation_timer:
+            self._history_animation_timer.stop()
+            self._history_animation_timer.deleteLater()
+
+        self._history_animation_timer = QTimer(self)
+        self._history_animation_timer.setInterval(interval_ms)
+        self._history_animation_step = 0
+
+        def _animate_step():
+            self._history_animation_step += 1
+            progress = min(1.0, self._history_animation_step / steps)
+            new_x = start_pos.x() + (target_x - start_pos.x()) * progress
+            new_y = start_pos.y() + (target_y - start_pos.y()) * progress
+            moving_piece.setPos(new_x, new_y)
+
+            if progress >= 1.0:
+                self._history_animation_timer.stop()
+                self._history_animation_timer.deleteLater()
+                self._history_animation_timer = None
+                on_finished()
+
+        self._history_animation_timer.timeout.connect(_animate_step)
+        self._history_animation_timer.start()
+

@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QFileDialog
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QFileDialog, QMessageBox
 from PySide6.QtCore import QSignalBlocker, Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from gui.board_widget import ChessBoardWidget
@@ -40,6 +40,7 @@ class GameWidget(QWidget):
         self.side_panel.export_fen_requested.connect(self.export_fen)
         self.side_panel.export_pgn_requested.connect(self.export_pgn)
         self.board.move_played.connect(self.on_move_played)
+        self.board.interaction_blocked.connect(self.on_interaction_blocked)
         self._setup_shortcuts()
 
         self.refresh_sidebar()
@@ -66,14 +67,25 @@ class GameWidget(QWidget):
     def on_move_played(self):
         self.review_index = len(self.game.board.move_stack)
         self.board.interaction_enabled = True
+        self.board.interaction_block_reason = None
         self.refresh_sidebar()
+
+    def on_interaction_blocked(self, reason):
+        if reason == "history":
+            QMessageBox.information(
+                self,
+                "Move blocked",
+                "You cannot make a move because you are viewing the move history. Return to the latest position.",
+            )
 
     def start_new_game(self):
         self.board.close_overlay()
+        self.board.cancel_pending_bot_moves()
         self.game.reset_board()
         self.game.is_first_move = True
         self.review_index = 0
         self.board.interaction_enabled = True
+        self.board.interaction_block_reason = None
         self.game.player_pov = "Black" if self.game.player_pov == "White" else "White"
         self.board.clear_annotations()
         self.board.render_position(self.game.get_display_fen(), self.game.player_pov)
@@ -134,23 +146,51 @@ class GameWidget(QWidget):
         return f"{advantage}\nWhite: {white_score} | Black: {black_score}"
 
     def jump_to_ply(self, ply_index):
+        previous_index = self.review_index
         self.review_index = max(0, min(ply_index, len(self.game.board.move_stack)))
-        self._render_review_position()
+        self._render_review_position(previous_index)
 
     def previous_move(self):
         if self.review_index > 0:
+            previous_index = self.review_index
             self.review_index -= 1
-            self._render_review_position()
+            self._render_review_position(previous_index)
 
     def next_move(self):
         if self.review_index < len(self.game.board.move_stack):
+            previous_index = self.review_index
             self.review_index += 1
-            self._render_review_position()
+            self._render_review_position(previous_index)
 
-    def _render_review_position(self):
+    def _render_review_position(self, previous_index=None):
         board_to_render = self._board_at(self.review_index)
         self.board.interaction_enabled = self.review_index == len(self.game.board.move_stack)
-        self.board.render_position(self.game.get_display_fen(board_to_render), self.game.player_pov)
+        self.board.interaction_block_reason = None if self.board.interaction_enabled else "history"
+
+        should_animate = (
+                previous_index is not None
+                and abs(self.review_index - previous_index) == 1
+                and len(self.game.board.move_stack) > 0
+        )
+
+        if should_animate:
+            if self.review_index > previous_index:
+                move = self.game.board.move_stack[previous_index]
+                from_square, to_square = move.from_square, move.to_square
+            else:
+                move = self.game.board.move_stack[self.review_index]
+                from_square, to_square = move.to_square, move.from_square
+
+            self.board.animate_history_move(
+                chess.square_file(from_square),
+                chess.square_rank(from_square),
+                chess.square_file(to_square),
+                chess.square_rank(to_square),
+                lambda: self.board.render_position(self.game.get_display_fen(board_to_render), self.game.player_pov),
+            )
+        else:
+            self.board.render_position(self.game.get_display_fen(board_to_render), self.game.player_pov)
+
         self.refresh_sidebar()
 
     def export_fen(self):
