@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QFileDialog
-from PySide6.QtCore import QSignalBlocker
+from PySide6.QtCore import QSignalBlocker, Qt
+from PySide6.QtGui import QKeySequence, QShortcut
 from gui.board_widget import ChessBoardWidget
 from gui.side_panel import SidePanel
 import chess
@@ -39,8 +40,28 @@ class GameWidget(QWidget):
         self.side_panel.export_fen_requested.connect(self.export_fen)
         self.side_panel.export_pgn_requested.connect(self.export_pgn)
         self.board.move_played.connect(self.on_move_played)
+        self._setup_shortcuts()
 
         self.refresh_sidebar()
+
+    def _setup_shortcuts(self):
+        self.shortcut_prev = QShortcut(QKeySequence(Qt.Key_Left), self)
+        self.shortcut_next = QShortcut(QKeySequence(Qt.Key_Right), self)
+        self.shortcut_first = QShortcut(QKeySequence(Qt.Key_Home), self)
+        self.shortcut_last = QShortcut(QKeySequence(Qt.Key_End), self)
+        self.shortcut_new_game = QShortcut(QKeySequence("Ctrl+N"), self)
+        self.shortcut_menu = QShortcut(QKeySequence("Ctrl+M"), self)
+        self.shortcut_export_pgn = QShortcut(QKeySequence("Ctrl+S"), self)
+
+        self.shortcut_prev.activated.connect(self.previous_move)
+        self.shortcut_next.activated.connect(self.next_move)
+        self.shortcut_first.activated.connect(lambda: self.jump_to_ply(0))
+        self.shortcut_last.activated.connect(
+            lambda: self.jump_to_ply(len(self.game.board.move_stack))
+        )
+        self.shortcut_new_game.activated.connect(self.start_new_game)
+        self.shortcut_menu.activated.connect(self.back_to_main_menu)
+        self.shortcut_export_pgn.activated.connect(self.export_pgn)
 
     def on_move_played(self):
         self.review_index = len(self.game.board.move_stack)

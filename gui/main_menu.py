@@ -8,46 +8,91 @@ from gui.variant_rules_dialog import VariantRulesDialog
 class MainMenu(QWidget):
     VARIANT_RULES = {
         "Standard": (
-            "Classic chess rules apply. Checkmate the opposing king to win.\n\n"
-            "• Normal castling, en passant and promotion are enabled.\n"
-            "• Stalemate, repetition and move-count draws behave as in regular chess."
+            "Classic chess rules: checkmate the opposing king to win.\n\n"
+            "How it plays:\n"
+            "• Tactical and strategic balance between opening, middlegame and endgame.\n"
+            "• The king must stay safe, and tempo/development matter from move one.\n\n"
+            "Important rules:\n"
+            "• Castling, en passant and promotion are enabled.\n"
+            "• Draws by stalemate, repetition, insufficient material and move-count rules apply."
         ),
         "Suicide": (
-            "The goal is to get rid of all your pieces. If you have no legal move, that also counts as a win.\n\n"
-            "• Capturing is mandatory whenever a capture is available.\n"
-            "• Check and checkmate do not matter in this variant."
+            "The goal is to lose all your own pieces first.\n\n"
+            "How it plays:\n"
+            "• You often sacrifice valuable pieces on purpose.\n"
+            "• Positioning to force your opponent to take can be stronger than direct attacks.\n\n"
+            "Important rules:\n"
+            "• Capturing is mandatory whenever any capture is available.\n"
+            "• Check/checkmate do not matter; the king is not royal.\n"
+            "• If you have no legal move, that counts as a win."
         ),
         "Atomic": (
-            "Captures cause an explosion that removes the capturing piece, the captured piece and every adjacent non-pawn piece.\n\n"
-            "• Kings may not move into explosion range.\n"
-            "• You win by exploding the opposing king."
+            "Every capture explodes.\n\n"
+            "How it plays:\n"
+            "• Capturing becomes both attack and self-destruct mechanism.\n"
+            "• King safety is very different: proximity to any capturable square is dangerous.\n\n"
+            "Important rules:\n"
+            "• A capture removes the capturing piece, captured piece, and adjacent non-pawn pieces.\n"
+            "• Kings cannot move into explosion range.\n"
+            "• You win by exploding the opponent king."
         ),
         "King of the Hill": (
-            "Standard chess rules apply, but there is an extra victory condition.\n\n"
-            "• Bring your king to one of the four central squares (d4, e4, d5, e5) to win.\n"
-            "• Checkmate is still a valid way to win as well."
+            "Standard chess + race for the center.\n\n"
+            "How it plays:\n"
+            "• King activity is a real weapon, not only an endgame idea.\n"
+            "• Central control and safe king routes become top priorities.\n\n"
+            "Important rules:\n"
+            "• Reach d4, e4, d5 or e5 with your king to win instantly.\n"
+            "• Checkmate is still a normal win condition."
         ),
         "Giveaway": (
-            "Giveaway follows the same spirit as Suicide: lose all your pieces before your opponent does.\n\n"
+            "A losing-chess variant where you try to get rid of your army.\n\n"
+            "How it plays:\n"
+            "• Material advantage can be bad, because extra pieces are extra liabilities.\n"
+            "• Piece traps and forced capture sequences decide many games.\n\n"
+            "Important rules:\n"
             "• Captures are compulsory.\n"
-            "• Kings have no royal status, so check is ignored."
+            "• The king has no royal status and check is ignored."
         ),
         "Horde": (
-            "White starts with a large horde of pawns, while Black has the normal setup.\n\n"
-            "• White wins by overwhelming Black.\n"
+            "Asymmetrical battle: White has a pawn horde, Black has regular pieces.\n\n"
+            "How it plays:\n"
+            "• White relies on space and numbers.\n"
+            "• Black relies on coordination, tactical breaks and king safety.\n\n"
+            "Important rules:\n"
+            "• White wins by surviving and overwhelming Black's army.\n"
             "• Black wins by eliminating the entire horde."
         ),
         "Antichess": (
-            "Antichess is another losing-chess variant where you try to get rid of all your pieces first.\n\n"
-            "• If a capture is available, you must capture.\n"
-            "• The king is treated like an ordinary piece, without check restrictions."
+            "A pure forcing variant focused on mandatory captures.\n\n"
+            "How it plays:\n"
+            "• Tempo and move-order are everything.\n"
+            "• Quiet-looking positions can hide forced tactical lines many moves long.\n\n"
+            "Important rules:\n"
+            "• If a capture exists, you must capture.\n"
+            "• The king is an ordinary piece; check restrictions do not apply.\n"
+            "• First side to lose all pieces wins."
         ),
         "Three-check": (
-            "Standard chess rules apply, but each side also tracks delivered checks.\n\n"
-            "• The first player to give three checks wins immediately.\n"
-            "• Checkmate can still end the game earlier."
+            "Standard chess with an extra tactical win condition.\n\n"
+            "How it plays:\n"
+            "• Initiative and king harassment are often stronger than material grabs.\n"
+            "• Sacrifices to force repeated checks are common.\n\n"
+            "Important rules:\n"
+            "• Deliver three checks to win immediately.\n"
+            "• Checkmate is still valid and can end the game before the third check."
         ),
     }
+    SHORTCUTS_TEXT = (
+        "Keyboard shortcuts during the game:\n\n"
+        "• ← : previous move in history\n"
+        "• → : next move in history\n"
+        "• Home : jump to initial position\n"
+        "• End : jump to latest position\n"
+        "• Ctrl+N : start new game\n"
+        "• Ctrl+M : back to main menu\n"
+        "• Ctrl+S : export PGN"
+    )
 
     def __init__(self):
         super().__init__()
@@ -59,9 +104,13 @@ class MainMenu(QWidget):
                 font-family: Arial;
             }
             QLabel#Title {
-                font-size: 36px;
+                font-size: 52px;
                 font-weight: bold;
                 color: #ffffff;
+            }
+            QLabel#Subtitle {
+                font-size: 22px;
+                color: #b8b8b8;
             }
             QLabel.section {
                 font-size: 14px;
@@ -108,8 +157,9 @@ class MainMenu(QWidget):
 
         """)
 
-        root = QVBoxLayout(self)
+        root = QHBoxLayout(self)
         root.setAlignment(Qt.AlignCenter)
+        root.setSpacing(20)
 
         card = QFrame()
         card.setFixedWidth(420)
@@ -122,15 +172,15 @@ class MainMenu(QWidget):
 
         layout = QVBoxLayout(card)
         layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(18)
+        layout.setSpacing(0)
 
         title = QLabel("ChessVar")
         title.setObjectName("Title")
         title.setAlignment(Qt.AlignCenter)
 
         subtitle = QLabel("Choose your game")
+        subtitle.setObjectName("Subtitle")
         subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setStyleSheet("color: #999999;")
 
         # -------- MODE --------
         mode_label = QLabel("Game Mode")
@@ -149,17 +199,6 @@ class MainMenu(QWidget):
         self.variant_combo = QComboBox()
         self.variant_combo.addItems(list(self.VARIANT_RULES.keys()))
 
-        self.variant_rules_btn = QPushButton("Rules")
-        self.variant_rules_btn.setObjectName("RulesButton")
-        self.variant_rules_btn.setCursor(Qt.PointingHandCursor)
-        self.variant_rules_btn.clicked.connect(self.show_variant_rules)
-
-        variant_header = QHBoxLayout()
-        variant_header.setSpacing(10)
-        variant_header.addWidget(variant_label)
-        variant_header.addStretch()
-        variant_header.addWidget(self.variant_rules_btn)
-
         # -------- SIDE --------
         side_label = QLabel("Play as")
         side_label.setProperty("class", "section")
@@ -172,7 +211,14 @@ class MainMenu(QWidget):
         self.bot_label.setProperty("class", "section")
 
         self.bot_combo = QComboBox()
-        self.bot_combo.addItems(["Easy", "Medium", "Hard"])
+        self.bot_combo.addItems([
+            "Beginner",
+            "Novice",
+            "Intermediate",
+            "Advanced",
+            "Master",
+        ])
+        self.bot_combo.setCurrentText("Intermediate")
 
         self.mode_combo.currentTextChanged.connect(self.update_bot_visibility)
 
@@ -180,26 +226,55 @@ class MainMenu(QWidget):
 
         start_btn = QPushButton("Start Game")
         start_btn.setFixedHeight(48)
+        small_gap=8
+        big_gap=20
 
         layout.addWidget(title)
         layout.addWidget(subtitle)
-        layout.addSpacing(10)
+        layout.addSpacing(big_gap)
 
         layout.addWidget(mode_label)
+        layout.addSpacing(small_gap)
         layout.addWidget(self.mode_combo)
+        layout.addSpacing(big_gap)
 
-        layout.addLayout(variant_header)
+        layout.addWidget(variant_label)
+        layout.addSpacing(small_gap)
         layout.addWidget(self.variant_combo)
+        layout.addSpacing(big_gap)
         layout.addWidget(side_label)
+        layout.addSpacing(small_gap)
         layout.addWidget(self.side_combo)
+        layout.addSpacing(big_gap)
 
         layout.addWidget(self.bot_label)
+        layout.addSpacing(small_gap)
         layout.addWidget(self.bot_combo)
+        layout.addSpacing(big_gap)
 
-        layout.addSpacing(10)
+        layout.addSpacing(6)
         layout.addWidget(start_btn)
 
+        side_buttons = QVBoxLayout()
+        side_buttons.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+        side_buttons.setSpacing(14)
+
+        self.variant_rules_btn = QPushButton("Rules")
+        self.variant_rules_btn.setObjectName("RulesButton")
+        self.variant_rules_btn.setCursor(Qt.PointingHandCursor)
+        self.variant_rules_btn.clicked.connect(self.show_variant_rules)
+
+        self.shortcuts_btn = QPushButton("Shortcuts")
+        self.shortcuts_btn.setObjectName("RulesButton")
+        self.shortcuts_btn.setCursor(Qt.PointingHandCursor)
+        self.shortcuts_btn.clicked.connect(self.show_shortcuts)
+
+        side_buttons.addWidget(self.variant_rules_btn)
+        side_buttons.addWidget(self.shortcuts_btn)
+
         root.addWidget(card)
+        root.addSpacing(8)
+        root.addLayout(side_buttons)
 
         self.start_btn = start_btn
 
@@ -217,3 +292,6 @@ class MainMenu(QWidget):
         dialog = VariantRulesDialog(variant_name, rules_text, self)
         dialog.exec()
 
+    def show_shortcuts(self):
+        dialog = VariantRulesDialog("Shortcuts", self.SHORTCUTS_TEXT, self)
+        dialog.exec()

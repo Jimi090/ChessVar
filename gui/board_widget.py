@@ -1,6 +1,6 @@
 from PySide6.QtGui import QColor, QBrush, QPen, QPolygonF
 from PySide6.QtWidgets import QGraphicsView
-from PySide6.QtCore import Qt, Signal, QPointF
+from PySide6.QtCore import Qt, Signal, QPointF, QTimer
 from utils.path_utils import ensure_executable, resource_path
 from gui.game_over_overlay import GameOverOverlay
 from gui.piece_item import PieceItem
@@ -13,6 +13,13 @@ import random
 
 class ChessBoardWidget(QGraphicsView):
     move_played = Signal()
+    BOT_LEVEL_SETTINGS = {
+        "Beginner": {"strategy": "random", "think_time": 0.0},
+        "Novice": {"strategy": "engine", "think_time": 0.00001},
+        "Intermediate": {"strategy": "engine", "think_time": 0.01},
+        "Advanced": {"strategy": "engine", "think_time": 0.1},
+        "Master": {"strategy": "engine", "think_time": 1.0},
+    }
 
     def __init__(self, game):
         super().__init__()
@@ -30,6 +37,7 @@ class ChessBoardWidget(QGraphicsView):
         size = self.square_size * 8
         self.scene.setSceneRect(0, 0, size, size)
         self.interaction_enabled = True
+        self._bot_animation_timer = None
 
     def draw_board(self):
         colors = ["#EEEED2", "#769656"]
@@ -409,34 +417,77 @@ class ChessBoardWidget(QGraphicsView):
         self.render_position(self.game.get_display_fen(), self.game.player_pov)
 
     def start_bot_move(self, level):
-        if level == "Easy":
+        level_config = self.BOT_LEVEL_SETTINGS.get(
+            level,
+            self.BOT_LEVEL_SETTINGS["Intermediate"],
+        )
+        strategy = level_config["strategy"]
+        if strategy == "random":
             moves = list(self.game.list_legal_moves())
             if not moves:
                 return
             move = moves[random.randrange(0, len(moves))]
             self.on_bot_move(move)
-        elif level == "Medium":
-            engine_path = ensure_executable(resource_path("engines/fairy-stockfish"))
-
-            self.bot_worker = BotWorker(
-                self.game.board,
-                engine_path,
-                time_limit=0.0000000001
-            )
-            self.bot_worker.move_ready.connect(self.on_bot_move)
-            self.bot_worker.start()
-        elif level == "Hard":
-            engine_path = ensure_executable(resource_path("engines/fairy-stockfish"))
-
-            self.bot_worker = BotWorker(
-                self.game.board,
-                engine_path,
-                time_limit=0.5
-            )
-            self.bot_worker.move_ready.connect(self.on_bot_move)
-            self.bot_worker.start()
+            return
+        engine_path = ensure_executable(resource_path("engines/fairy-stockfish"))
+        self.bot_worker = BotWorker(
+            self.game.board,
+            engine_path,
+            time_limit=level_config["think_time"],
+        )
+        self.bot_worker.move_ready.connect(self.on_bot_move)
+        self.bot_worker.start()
 
     def on_bot_move(self, move):
+        if move is None:
+            return
+        self.interaction_enabled = False
+        self.animate_bot_move(move)
+
+    def animate_bot_move(self, move):
+        moving_piece = self._piece_item_at_square(
+            chess.square_file(move.from_square),
+            chess.square_rank(move.from_square),
+        )
+        if moving_piece is None:
+            self._finish_bot_move(move)
+            return
+
+        target_x, target_y = self._board_square_to_scene_top_left(
+            chess.square_file(move.to_square),
+            chess.square_rank(move.to_square),
+        )
+        start_pos = moving_piece.pos()
+        steps = 12
+        duration_ms = 240
+        interval_ms = max(1, duration_ms // steps)
+        self._bot_animation_timer = QTimer(self)
+        self._bot_animation_timer.setInterval(interval_ms)
+        self._bot_animation_step = 0
+
+        def _animate_step():
+            self._bot_animation_step += 1
+            progress = min(1.0, self._bot_animation_step / steps)
+            new_x = start_pos.x() + (target_x - start_pos.x()) * progress
+            new_y = start_pos.y() + (target_y - start_pos.y()) * progress
+            moving_piece.setPos(new_x, new_y)
+
+            if progress >= 1.0:
+                self._bot_animation_timer.stop()
+                self._bot_animation_timer.deleteLater()
+                self._bot_animation_timer = None
+                self._finish_bot_move(move)
+
+        self._bot_animation_timer.timeout.connect(_animate_step)
+        self._bot_animation_timer.start()
+
+    def _piece_item_at_square(self, col, row):
+        x, y = self._board_square_to_scene_top_left(col, row)
+        center = QPointF(x + self.square_size / 2, y + self.square_size / 2)
+        item = self.itemAt(self.mapFromScene(center))
+        return item if isinstance(item, PieceItem) else None
+
+    def _finish_bot_move(self, move):
         self.game.apply_bot_move(move)
         self.clear_annotations()
         self._render_current_position()

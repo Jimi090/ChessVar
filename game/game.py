@@ -45,7 +45,7 @@ class GameState:
         self.pieces = []
         self.is_first_move = True
         self.vs_bot = False
-        self.bot_level = "Easy"
+        self.bot_level = "Intermediate"
 
     def _create_board(self):
         board_builder = self.VARIANT_BUILDERS.get(self.variant,chess.Board)
