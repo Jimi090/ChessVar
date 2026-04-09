@@ -1,11 +1,12 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QPushButton,
-    QComboBox, QFrame, QHBoxLayout
+    QComboBox, QFrame, QHBoxLayout, QToolButton, QMenu
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from gui.variant_rules_dialog import VariantRulesDialog
 
 class MainMenu(QWidget):
+    section_selected = Signal(str)
     VARIANT_RULES = {
         "Standard": (
             "Classic chess rules: checkmate the opposing king to win.\n\n"
@@ -157,7 +158,60 @@ class MainMenu(QWidget):
 
         """)
 
-        root = QHBoxLayout(self)
+        page_layout = QVBoxLayout(self)
+        page_layout.setContentsMargins(14, 14, 14, 14)
+        page_layout.setSpacing(8)
+
+        top_bar = QHBoxLayout()
+        self.menu_button = QToolButton()
+        self.menu_button.setText("☰")
+        self.menu_button.setToolTip("Menu")
+        self.menu_button.setCursor(Qt.PointingHandCursor)
+        self.menu_button.setPopupMode(QToolButton.InstantPopup)
+        self.menu_button.setStyleSheet("""
+                    QToolButton {
+                        background-color: #1e1e1e;
+                        border: 1px solid #333;
+                        border-radius: 8px;
+                        font-size: 22px;
+                        color: #e0e0e0;
+                        padding: 3px 10px;
+                    }
+                    QToolButton:hover {
+                        background-color: #2a2a2a;
+                    }
+                """)
+
+        menu = QMenu(self)
+        menu.setStyleSheet("""
+                    QMenu {
+                        background-color: #1e1e1e;
+                        border: 1px solid #333333;
+                        border-radius: 8px;
+                        padding: 6px;
+                    }
+                    QMenu::item {
+                        color: #e0e0e0;
+                        font-size: 18px;
+                        padding: 10px 18px;
+                        border-radius: 6px;
+                    }
+                    QMenu::item:selected {
+                        background-color: #2e4a25;
+                        color: #ffffff;
+                    }
+                """)
+        play_action = menu.addAction("Play Game")
+        puzzle_action = menu.addAction("Chess Puzzles")
+        play_action.triggered.connect(lambda: self.section_selected.emit("game"))
+        puzzle_action.triggered.connect(lambda: self.section_selected.emit("puzzle"))
+        self.menu_button.setMenu(menu)
+
+        top_bar.addWidget(self.menu_button, alignment=Qt.AlignLeft | Qt.AlignTop)
+        top_bar.addStretch(1)
+        page_layout.addLayout(top_bar)
+
+        root = QHBoxLayout()
         root.setAlignment(Qt.AlignCenter)
         root.setSpacing(20)
 
@@ -275,6 +329,7 @@ class MainMenu(QWidget):
         root.addWidget(card)
         root.addSpacing(8)
         root.addLayout(side_buttons)
+        page_layout.addLayout(root, stretch=1)
 
         self.start_btn = start_btn
 

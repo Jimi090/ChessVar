@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QMainWindow, QStackedWidget
 from gui.main_menu import MainMenu
 from gui.game_widget import GameWidget
+from gui.puzzle_widget import PuzzleWidget
 from game.game import GameState
 import chess
 import chess.variant
@@ -19,6 +20,8 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.menu)
 
         self.menu.start_btn.clicked.connect(self.start_game)
+        self.menu.section_selected.connect(self.handle_section_selected)
+        self.puzzle_widget = None
 
     def start_game(self):
         mode = self.menu.mode_combo.currentText()
@@ -34,5 +37,18 @@ class MainWindow(QMainWindow):
         self.game_widget = GameWidget(game,back_to_menu_callback=self.show_main_menu)
         self.stack.addWidget(self.game_widget)
         self.stack.setCurrentWidget(self.game_widget)
+
+    def handle_section_selected(self, section):
+        if section == "puzzle":
+            self.show_puzzle_mode()
+        else:
+            self.show_main_menu()
+
+    def show_puzzle_mode(self):
+        if self.puzzle_widget is None:
+            self.puzzle_widget = PuzzleWidget(navigate_callback=self.handle_section_selected)
+            self.stack.addWidget(self.puzzle_widget)
+        self.stack.setCurrentWidget(self.puzzle_widget)
+
     def show_main_menu(self):
         self.stack.setCurrentWidget(self.menu)
