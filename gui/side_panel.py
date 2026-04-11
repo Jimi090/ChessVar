@@ -23,7 +23,8 @@ class SidePanel(QWidget):
         super().__init__()
         self.game = game
 
-        self.setFixedWidth(320)
+        self.setMinimumWidth(250)
+        self.setMaximumWidth(460)
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignTop)
         layout.setSpacing(12)
@@ -78,6 +79,30 @@ class SidePanel(QWidget):
         self.next_btn.clicked.connect(self.next_move_requested.emit)
         self.export_fen_btn.clicked.connect(self.export_fen_requested.emit)
         self.export_pgn_btn.clicked.connect(self.export_pgn_requested.emit)
+        self._apply_scaling(self.width())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._apply_scaling(event.size().width())
+
+    def _apply_scaling(self, width):
+        scale = max(0.85, min(1.35, width / 320))
+        button_height = int(38 * scale)
+        nav_width = int(55 * scale)
+        nav_height = int(30 * scale)
+        move_history_height = int(260 * scale)
+
+        self.back_to_menu_btn.setFixedHeight(button_height)
+        self.new_game_btn.setFixedHeight(button_height)
+        self.prev_btn.setFixedSize(QSize(nav_width, nav_height))
+        self.next_btn.setFixedSize(QSize(nav_width, nav_height))
+        self.move_list.setMinimumHeight(max(180, move_history_height))
+        self.move_list.setMaximumHeight(int(360 * scale))
+
+        title_size = int(13 * scale)
+        body_size = int(11 * scale)
+        self.current_player_label.setStyleSheet(f"font-weight: bold; font-size: {title_size}pt;")
+        self.material_label.setStyleSheet(f"font-size: {body_size}pt;")
 
     def on_history_click(self, item: QListWidgetItem):
         ply_index = item.data(Qt.UserRole)

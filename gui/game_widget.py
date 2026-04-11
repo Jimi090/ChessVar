@@ -23,14 +23,15 @@ class GameWidget(QWidget):
         self.review_index = len(self.game.board.move_stack)
 
         layout = QHBoxLayout(self)
+        self.main_layout = layout
 
         self.board = ChessBoardWidget(game)
         self.side_panel = SidePanel(game)
 
         self.board.render_position(self.game.get_display_fen(), game.player_pov)
 
-        layout.addWidget(self.board, stretch=3)
-        layout.addWidget(self.side_panel, stretch=1)
+        layout.addWidget(self.board, stretch=4)
+        layout.addWidget(self.side_panel, stretch=2)
 
         self.side_panel.new_game_requested.connect(self.start_new_game)
         self.side_panel.back_to_menu_requested.connect(self.back_to_main_menu)
@@ -44,6 +45,11 @@ class GameWidget(QWidget):
         self._setup_shortcuts()
 
         self.refresh_sidebar()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        panel_width = int(self.width() * 0.24)
+        self.side_panel.setFixedWidth(max(250, min(420, panel_width)))
 
     def _setup_shortcuts(self):
         self.shortcut_prev = QShortcut(QKeySequence(Qt.Key_Left), self)

@@ -215,26 +215,27 @@ class MainMenu(QWidget):
         root.setAlignment(Qt.AlignCenter)
         root.setSpacing(20)
 
-        card = QFrame()
-        card.setFixedWidth(420)
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1b1b1b;
-                border-radius: 16px;
-            }
-        """)
+        self.card = QFrame()
+        self.card.setMinimumWidth(360)
+        self.card.setMaximumWidth(640)
+        self.card.setStyleSheet("""
+                    QFrame {
+                        background-color: #1b1b1b;
+                        border-radius: 16px;
+                    }
+                """)
 
-        layout = QVBoxLayout(card)
+        layout = QVBoxLayout(self.card)
         layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(0)
 
-        title = QLabel("ChessVar")
-        title.setObjectName("Title")
-        title.setAlignment(Qt.AlignCenter)
+        self.title = QLabel("ChessVar")
+        self.title.setObjectName("Title")
+        self.title.setAlignment(Qt.AlignCenter)
 
-        subtitle = QLabel("Choose your game")
-        subtitle.setObjectName("Subtitle")
-        subtitle.setAlignment(Qt.AlignCenter)
+        self.subtitle = QLabel("Choose your game")
+        self.subtitle.setObjectName("Subtitle")
+        self.subtitle.setAlignment(Qt.AlignCenter)
 
         # -------- MODE --------
         mode_label = QLabel("Game Mode")
@@ -283,8 +284,8 @@ class MainMenu(QWidget):
         small_gap=8
         big_gap=20
 
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
+        layout.addWidget(self.title)
+        layout.addWidget(self.subtitle)
         layout.addSpacing(big_gap)
 
         layout.addWidget(mode_label)
@@ -326,12 +327,33 @@ class MainMenu(QWidget):
         side_buttons.addWidget(self.variant_rules_btn)
         side_buttons.addWidget(self.shortcuts_btn)
 
-        root.addWidget(card)
+        root.addWidget(self.card)
         root.addSpacing(8)
         root.addLayout(side_buttons)
         page_layout.addLayout(root, stretch=1)
 
         self.start_btn = start_btn
+        self._apply_scaling(self.width())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._apply_scaling(event.size().width())
+
+    def _apply_scaling(self, width):
+        scale = max(0.85, min(1.45, width / 1100))
+        card_width = int(width * 0.32)
+        self.card.setFixedWidth(max(360, min(640, card_width)))
+
+        title_size = int(52 * scale)
+        subtitle_size = int(22 * scale)
+        start_height = int(48 * scale)
+        rules_height = int(36 * scale)
+
+        self.title.setStyleSheet(f"font-size: {title_size}px; font-weight: bold; color: #ffffff;")
+        self.subtitle.setStyleSheet(f"font-size: {subtitle_size}px; color: #b8b8b8;")
+        self.start_btn.setFixedHeight(start_height)
+        self.variant_rules_btn.setMinimumHeight(rules_height)
+        self.shortcuts_btn.setMinimumHeight(rules_height)
 
     def update_bot_visibility(self):
         is_bot = "Bot" in self.mode_combo.currentText()

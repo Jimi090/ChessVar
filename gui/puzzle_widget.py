@@ -1,6 +1,7 @@
 import csv
+import json
+import random
 from pathlib import Path
-
 import chess
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -20,17 +21,24 @@ from utils.path_utils import resource_path
 
 
 class PuzzleWidget(QWidget):
+    PROGRESS_FILE = Path.home() / ".chessvar" / "puzzle_progress.json"
+
     def __init__(self, navigate_callback=None):
         super().__init__()
         self.navigate_callback = navigate_callback
         self.puzzles = self._load_puzzles()
+        self.current_index = None
+        self.current_puzzle = None
         self.current_index = 0
         self.expected_move = None
         self.solver_color = "White"
+        self.solved_ids = self._load_progress()
+        self.pending_puzzle_indices = []
 
         self.game = GameState(chess, "standard")
         self.game.vs_bot = False
         self.board_widget = ChessBoardWidget(self.game)
+        self.board_widget.preserve_pov_on_move = True
         self.board_widget.move_played.connect(self._on_move_played)
 
         page_layout = QVBoxLayout(self)
@@ -93,9 +101,10 @@ class PuzzleWidget(QWidget):
 
         content.addWidget(self.board_widget, stretch=3, alignment=Qt.AlignCenter)
 
-        right_panel = QFrame()
-        right_panel.setFixedWidth(300)
-        right_panel.setStyleSheet("""
+        self.right_panel = QFrame()
+        self.right_panel.setMinimumWidth(260)
+        self.right_panel.setMaximumWidth(420)
+        self.right_panel.setStyleSheet("""
             QFrame {
                 background-color: #1b1b1b;
                 border-radius: 16px;
@@ -133,7 +142,7 @@ class PuzzleWidget(QWidget):
             }
         """)
 
-        right_layout = QVBoxLayout(right_panel)
+        right_layout = QVBoxLayout(self.right_panel)
         right_layout.setContentsMargins(18, 18, 18, 18)
         right_layout.setSpacing(10)
 
@@ -147,6 +156,11 @@ class PuzzleWidget(QWidget):
         self.counter_label.setAlignment(Qt.AlignCenter)
         right_layout.addWidget(self.counter_label)
 
+        self.perspective_label = QLabel("")
+        self.perspective_label.setObjectName("PanelMeta")
+        self.perspective_label.setAlignment(Qt.AlignCenter)
+        right_layout.addWidget(self.perspective_label)
+
         self.status_label = QLabel("")
         self.status_label.setObjectName("StatusLabel")
         self.status_label.setWordWrap(True)
@@ -157,7 +171,7 @@ class PuzzleWidget(QWidget):
         self.hint_btn = QPushButton("Hint")
         self.solution_btn = QPushButton("Show Solution")
         self.next_btn = QPushButton("Next Puzzle")
-        self.back_btn = QPushButton("Back to Game Menu")
+        self.back_btn = QPushButton("Back to Main Menu")
 
         self.next_btn.setEnabled(False)
         self.hint_btn.clicked.connect(self._show_hint)
@@ -171,15 +185,30 @@ class PuzzleWidget(QWidget):
         right_layout.addWidget(self.back_btn)
         right_layout.addStretch(1)
 
-        content.addWidget(right_panel, stretch=1, alignment=Qt.AlignTop)
+        content.addWidget(self.right_panel, stretch=2, alignment=Qt.AlignTop)
 
-        if self.puzzles:
-            self._load_current_puzzle()
+        self._refresh_pending_puzzles()
+        if self.pending_puzzle_indices:
+            self._advance_puzzle(load_first=True)
         else:
-            self.status_label.setText("No puzzles found in chess_puzzles.csv.")
+            self.status_label.setText("No unsolved puzzles available.")
             self.board_widget.interaction_enabled = False
             self.hint_btn.setEnabled(False)
             self.solution_btn.setEnabled(False)
+            self.next_btn.setEnabled(False)
+        self._apply_scaling(self.width())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._apply_scaling(event.size().width())
+
+    def _apply_scaling(self, width):
+        scale = max(0.85, min(1.35, width / 1200))
+        panel_width = int(width * 0.22)
+        self.right_panel.setFixedWidth(max(260, min(420, panel_width)))
+        button_height = int(44 * scale)
+        for button in (self.hint_btn, self.solution_btn, self.next_btn, self.back_btn):
+            button.setMinimumHeight(button_height)
 
     def _navigate(self, section):
         if self.navigate_callback:
@@ -197,16 +226,37 @@ class PuzzleWidget(QWidget):
                 moves = (row.get("Moves") or "").strip().split()
                 if not moves:
                     continue
-                puzzles.append(
-                    {
-                        "fen": row.get("FEN", ""),
-                        "solution": moves[0],
-                    }
-                )
+                puzzles.append({"id": len(puzzles), "fen": row.get("FEN", ""), "solution": moves[0]})
         return puzzles
 
+    def _load_progress(self):
+        if not self.PROGRESS_FILE.exists():
+            return set()
+        try:
+            with self.PROGRESS_FILE.open("r", encoding="utf-8") as progress_file:
+                payload = json.load(progress_file)
+        except (json.JSONDecodeError, OSError):
+            return set()
+        solved = payload.get("solved_ids", [])
+        return {int(item) for item in solved if str(item).isdigit()}
+
+    def _save_progress(self):
+        try:
+            self.PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with self.PROGRESS_FILE.open("w", encoding="utf-8") as progress_file:
+                json.dump({"solved_ids": sorted(self.solved_ids)}, progress_file)
+        except OSError:
+            pass
+
+    def _refresh_pending_puzzles(self):
+        self.pending_puzzle_indices = [i for i, puzzle in enumerate(self.puzzles) if puzzle["id"] not in self.solved_ids]
+        random.shuffle(self.pending_puzzle_indices)
+
     def _load_current_puzzle(self):
+        if self.current_index is None:
+            return
         puzzle = self.puzzles[self.current_index]
+        self.current_puzzle = puzzle
         self.expected_move = puzzle["solution"]
 
         self.game.board = chess.Board(puzzle["fen"])
@@ -219,7 +269,12 @@ class PuzzleWidget(QWidget):
         self.board_widget.clear_annotations()
         self.board_widget.render_position(self.game.get_display_fen(), self.game.player_pov)
 
-        self.counter_label.setText(f"Puzzle {self.current_index + 1} / {len(self.puzzles)}")
+        solved_count = len(self.solved_ids)
+        remaining_count = len(self.pending_puzzle_indices)
+        self.counter_label.setText(
+            f"Solved: {solved_count} / {len(self.puzzles)} | Remaining: {remaining_count}"
+        )
+        self.perspective_label.setText(f"Solve from: {self.solver_color}")
         self.status_label.setStyleSheet("font-size: 15px; color: #d8d8d8;")
         self.status_label.setText("Find the best move. Only the correct move solves this puzzle.")
         self.next_btn.setEnabled(False)
@@ -232,6 +287,9 @@ class PuzzleWidget(QWidget):
         if played_move == self.expected_move:
             self.board_widget.interaction_enabled = False
             self.board_widget.interaction_block_reason = "solved"
+            if self.current_puzzle is not None:
+                self.solved_ids.add(self.current_puzzle["id"])
+                self._save_progress()
             self.status_label.setStyleSheet("font-size: 15px; color: #8fd16a;")
             self.status_label.setText("Correct! Click 'Next Puzzle' to continue.")
             self.next_btn.setEnabled(True)
@@ -280,7 +338,34 @@ class PuzzleWidget(QWidget):
         self.status_label.setText(f"Solution move: {self.expected_move}")
 
     def _next_puzzle(self):
+        self._advance_puzzle(load_first=False)
+
+    def _advance_puzzle(self, load_first):
         if not self.puzzles:
             return
-        self.current_index = (self.current_index + 1) % len(self.puzzles)
+
+        if not load_first and self.current_index is not None:
+            self.pending_puzzle_indices = [
+                index for index in self.pending_puzzle_indices if index != self.current_index
+            ]
+
+        if not self.pending_puzzle_indices:
+            self.current_index = None
+            self.current_puzzle = None
+            self.expected_move = None
+            self.counter_label.setText(f"Solved: {len(self.solved_ids)} / {len(self.puzzles)}")
+            self.perspective_label.setText("Solve from: -")
+            self.status_label.setStyleSheet("font-size: 15px; color: #8fd16a;")
+            self.status_label.setText("Great job! You solved all available puzzles.")
+            self.board_widget.interaction_enabled = False
+            self.board_widget.interaction_block_reason = "solved"
+            self.hint_btn.setEnabled(False)
+            self.solution_btn.setEnabled(False)
+            self.next_btn.setEnabled(False)
+            return
+
+        self.current_index = self.pending_puzzle_indices[0]
+        self.hint_btn.setEnabled(True)
+        self.solution_btn.setEnabled(True)
         self._load_current_puzzle()
+

@@ -32,17 +32,35 @@ class ChessBoardWidget(QGraphicsView):
         self.annotation_items = []
         self.highlighted_squares = set()
         self.arrows = set()
+        self.preserve_pov_on_move = False
 
         self.scene = BoardScene(self)
         self.setScene(self.scene)
-        size = self.square_size * 8
-        self.scene.setSceneRect(0, 0, size, size)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setAlignment(Qt.AlignCenter)
+        self._set_board_pixel_size(self.square_size * 8)
         self.interaction_enabled = True
         self.interaction_block_reason = None
         self._bot_animation_timer = None
         self._history_animation_timer = None
         self._bot_workers = set()
         self._bot_request_id = 0
+
+    def _set_board_pixel_size(self, pixel_size):
+        self.square_size = max(24, pixel_size // 8)
+        board_size = self.square_size * 8
+        self.scene.setSceneRect(0, 0, board_size, board_size)
+        self.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        available_size = min(self.viewport().width(), self.viewport().height())
+        if available_size <= 0:
+            return
+        target_size = max(192, int(available_size * 0.86))
+        self._set_board_pixel_size(target_size)
+        self._render_current_position()
 
     def draw_board(self):
         colors = ["#EEEED2", "#769656"]
@@ -271,7 +289,7 @@ class ChessBoardWidget(QGraphicsView):
         self.clear_legal_move_markers()
         self.clear_annotations()
         self.selected_piece = None
-        if not self.game.vs_bot:
+        if not self.game.vs_bot and not self.preserve_pov_on_move:
             self.game.player_pov = "White" if self.game.board.turn == chess.WHITE else "Black"
         self._render_current_position()
         game_over = self.after_move()

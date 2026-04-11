@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QMainWindow, QStackedWidget
+from PySide6.QtGui import QKeySequence, QShortcut
 from gui.main_menu import MainMenu
 from gui.game_widget import GameWidget
 from gui.puzzle_widget import PuzzleWidget
@@ -12,6 +13,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("ChessVar")
         self.resize(1000, 700)
+        self._setup_window_shortcuts()
 
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -22,6 +24,16 @@ class MainWindow(QMainWindow):
         self.menu.start_btn.clicked.connect(self.start_game)
         self.menu.section_selected.connect(self.handle_section_selected)
         self.puzzle_widget = None
+
+    def _setup_window_shortcuts(self):
+        self.fullscreen_shortcut = QShortcut(QKeySequence("F11"), self)
+        self.fullscreen_shortcut.activated.connect(self.toggle_fullscreen)
+
+    def toggle_fullscreen(self):
+        if self.isFullScreen():
+            self.showNormal()
+        else:
+            self.showFullScreen()
 
     def start_game(self):
         mode = self.menu.mode_combo.currentText()
