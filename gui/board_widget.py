@@ -1,6 +1,6 @@
 from PySide6.QtGui import QColor, QBrush, QPen, QPolygonF
 from PySide6.QtWidgets import QGraphicsView
-from PySide6.QtCore import Qt, Signal, QPointF, QTimer
+from PySide6.QtCore import Qt, Signal, QPointF, QTimer, QEvent
 from utils.path_utils import ensure_executable, resource_path
 from gui.game_over_overlay import GameOverOverlay
 from gui.piece_item import PieceItem
@@ -37,6 +37,7 @@ class ChessBoardWidget(QGraphicsView):
 
         self.scene = BoardScene(self)
         self.setScene(self.scene)
+        self.setFrameShape(QGraphicsView.NoFrame)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setAlignment(Qt.AlignCenter)
@@ -49,6 +50,9 @@ class ChessBoardWidget(QGraphicsView):
         self._bot_request_id = 0
         self.board_fill_ratio = 0.8
         self.max_board_pixels = None
+        self._last_target_size = None
+        QTimer.singleShot(0, self._attach_window_event_filter)
+        QTimer.singleShot(0, self._apply_target_board_size)
 
     def _set_board_pixel_size(self, pixel_size):
         self.square_size = max(24, pixel_size // 8)
@@ -58,17 +62,44 @@ class ChessBoardWidget(QGraphicsView):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        viewport_width = self.viewport().width()
-        viewport_height = self.viewport().height()
-        if viewport_width <= 0 or viewport_height <= 0:
-            return
+        self._apply_target_board_size()
+
+    def _attach_window_event_filter(self):
         top_level_window = self.window()
-        window_height = top_level_window.height() if top_level_window else viewport_height
-        target_size = int(window_height * self.board_fill_ratio)
-        target_size = min(target_size, viewport_width, viewport_height)
+        if top_level_window and top_level_window is not self:
+            top_level_window.installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        if watched is self.window() and event.type() in (QEvent.Resize, QEvent.WindowStateChange):
+            self._apply_target_board_size()
+        return super().eventFilter(watched, event)
+
+    def _apply_target_board_size(self):
+        top_level_window = self.window()
+        parent_widget = self.parentWidget()
+        if not top_level_window or not parent_widget:
+            return
+
+        screen = top_level_window.screen()
+        if not screen:
+            return
+
+        screen_height = screen.availableGeometry().height()
+        target_size = int(screen_height * self.board_fill_ratio)
         target_size = max(192, target_size)
+
         if self.max_board_pixels:
             target_size = min(target_size, self.max_board_pixels)
+
+        max_by_parent = min(parent_widget.width(), parent_widget.height())
+        target_size = min(target_size, max_by_parent)
+        target_size = max(96, target_size)
+
+        if target_size == self._last_target_size:
+            return
+
+        self._last_target_size = target_size
+        self.setFixedSize(target_size, target_size)
         self._set_board_pixel_size(target_size)
         self._render_current_position()
 
@@ -321,18 +352,32 @@ class ChessBoardWidget(QGraphicsView):
         else:
             move = [str(7 - piece.col) + str(7 - piece.row), str(col) + str(row)]
 
-        can_be_promoted = False
         new_sym = ''
-        if piece.symbol.lower() == "p":
-            if (piece.symbol.isupper() and row == 7) or (piece.symbol.islower() and row == 0):
-                color = "White" if piece.symbol.isupper() else "Black"
-                new_sym = PromotionDialog.get_promotion(color.lower(), self)
-                if new_sym:
-                    can_be_promoted = True
-                    piece.symbol = new_sym.upper() if piece.symbol.isupper() else new_sym.lower()
+        uci_move = self.game.change_format(move)
+        from_square = chess.parse_square(uci_move[:2])
+        to_square = chess.parse_square(uci_move[2:])
+        moved_piece = self.game.board.piece_at(from_square)
+        is_pawn = moved_piece is not None and moved_piece.piece_type == chess.PAWN
 
-        if (self.game.is_move_legal(self.game.change_format(move) + new_sym) or
-                (self.game.is_move_legal(self.game.change_format(move)) and not can_be_promoted)):
+        if is_pawn and chess.square_rank(to_square) in (0, 7):
+            legal_promotions = [
+                legal_move
+                for legal_move in self.game.board.legal_moves
+                if legal_move.from_square == from_square
+                   and legal_move.to_square == to_square
+                   and legal_move.promotion is not None
+            ]
+            if not legal_promotions:
+                self.clear_legal_move_markers()
+                return False
+
+            color = "white" if moved_piece.color == chess.WHITE else "black"
+            new_sym = PromotionDialog.get_promotion(color, self)
+            if not new_sym:
+                self.clear_legal_move_markers()
+                return False
+
+        if self.game.is_move_legal(uci_move + new_sym):
             self.game.make_move(move, new_sym)
             return self._finalize_successful_move()
 
@@ -415,6 +460,8 @@ class ChessBoardWidget(QGraphicsView):
         result = self.game.get_game_result()
         if not result:
             return False
+        self.interaction_enabled = False
+        self.interaction_block_reason = "finished"
 
         if result["type"] == "win":
             title = f"{result['winner']} wins!"
