@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
 )
 from PySide6.QtCore import Qt, QSize, Signal
+from PySide6.QtGui import QFont
 
 class SidePanel(QWidget):
     new_game_requested = Signal()
@@ -91,6 +92,8 @@ class SidePanel(QWidget):
         nav_width = int(55 * scale)
         nav_height = int(30 * scale)
         move_history_height = int(260 * scale)
+        button_font_size = max(9, int(12 * scale))
+        nav_font_size = max(10, int(13 * scale))
 
         self.back_to_menu_btn.setFixedHeight(button_height)
         self.new_game_btn.setFixedHeight(button_height)
@@ -98,6 +101,12 @@ class SidePanel(QWidget):
         self.next_btn.setFixedSize(QSize(nav_width, nav_height))
         self.move_list.setMinimumHeight(max(180, move_history_height))
         self.move_list.setMaximumHeight(int(360 * scale))
+        self.back_to_menu_btn.setFont(QFont("Arial", button_font_size, QFont.Bold))
+        self.new_game_btn.setFont(QFont("Arial", button_font_size, QFont.Bold))
+        self.export_fen_btn.setFont(QFont("Arial", button_font_size))
+        self.export_pgn_btn.setFont(QFont("Arial", button_font_size))
+        self.prev_btn.setFont(QFont("Arial", nav_font_size, QFont.Bold))
+        self.next_btn.setFont(QFont("Arial", nav_font_size, QFont.Bold))
 
         title_size = int(13 * scale)
         body_size = int(11 * scale)
@@ -128,4 +137,3 @@ class SidePanel(QWidget):
         has_moves = len(moves_with_ply) > 0
         self.prev_btn.setEnabled(has_moves and selected_ply > 0)
         self.next_btn.setEnabled(has_moves and selected_ply < len(moves_with_ply))
-

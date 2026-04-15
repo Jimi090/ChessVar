@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QComboBox, QFrame, QHBoxLayout, QToolButton, QMenu
 )
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 from gui.variant_rules_dialog import VariantRulesDialog
 
 class MainMenu(QWidget):
@@ -350,12 +351,19 @@ class MainMenu(QWidget):
         subtitle_size = int(22 * scale)
         start_height = int(48 * scale)
         rules_height = int(36 * scale)
+        main_btn_font = max(12, int(18 * scale))
+        aux_btn_font = max(10, int(12 * scale))
+        menu_btn_font = max(14, int(22 * scale))
 
         self.title.setStyleSheet(f"font-size: {title_size}px; font-weight: bold; color: #ffffff;")
         self.subtitle.setStyleSheet(f"font-size: {subtitle_size}px; color: #b8b8b8;")
         self.start_btn.setFixedHeight(start_height)
+        self.start_btn.setFont(QFont("Arial", main_btn_font, QFont.Bold))
         self.variant_rules_btn.setMinimumHeight(rules_height)
         self.shortcuts_btn.setMinimumHeight(rules_height)
+        self.variant_rules_btn.setFont(QFont("Arial", aux_btn_font))
+        self.shortcuts_btn.setFont(QFont("Arial", aux_btn_font))
+        self.menu_button.setFont(QFont("Arial", menu_btn_font))
 
     def update_bot_visibility(self):
         is_bot = "Bot" in self.mode_combo.currentText()

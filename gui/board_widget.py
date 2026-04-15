@@ -47,7 +47,7 @@ class ChessBoardWidget(QGraphicsView):
         self._history_animation_timer = None
         self._bot_workers = set()
         self._bot_request_id = 0
-        self.board_fill_ratio = 0.78
+        self.board_fill_ratio = 0.8
         self.max_board_pixels = 880
 
     def _set_board_pixel_size(self, pixel_size):
@@ -58,10 +58,13 @@ class ChessBoardWidget(QGraphicsView):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        available_size = min(self.viewport().width(), self.viewport().height())
-        if available_size <= 0:
+        viewport_width = self.viewport().width()
+        viewport_height = self.viewport().height()
+        if viewport_width <= 0 or viewport_height <= 0:
             return
-        target_size = max(192, int(available_size * self.board_fill_ratio))
+        target_size = int(viewport_height * self.board_fill_ratio)
+        target_size = min(target_size, viewport_width)
+        target_size = max(192, target_size)
         target_size = min(target_size, self.max_board_pixels)
         self._set_board_pixel_size(target_size)
         self._render_current_position()
@@ -604,4 +607,3 @@ class ChessBoardWidget(QGraphicsView):
 
         self._history_animation_timer.timeout.connect(_animate_step)
         self._history_animation_timer.start()
-

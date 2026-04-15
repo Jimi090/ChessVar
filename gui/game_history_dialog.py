@@ -1,12 +1,15 @@
 from datetime import datetime
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog, QLabel, QListWidget, QListWidgetItem, QPushButton, QVBoxLayout
 
 from game.game_history import GameHistoryStore
 
 
 class GameHistoryDialog(QDialog):
+    game_selected = Signal(dict)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Game History")
@@ -56,13 +59,25 @@ class GameHistoryDialog(QDialog):
         layout.addWidget(header)
 
         self.history_list = QListWidget()
+        self.history_list.itemClicked.connect(self._on_item_clicked)
         layout.addWidget(self.history_list, stretch=1)
 
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
+        self.close_btn = close_btn
         layout.addWidget(close_btn, alignment=Qt.AlignRight)
 
         self._populate_history()
+        self._apply_scaling(self.width())
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._apply_scaling(event.size().width())
+
+    def _apply_scaling(self, width):
+        scale = max(0.85, min(1.3, width / 620))
+        font_size = max(10, int(14 * scale))
+        self.close_btn.setFont(QFont("Arial", font_size))
 
     def _populate_history(self):
         entries = GameHistoryStore.load()
@@ -89,7 +104,17 @@ class GameHistoryDialog(QDialog):
             text = (
                 f"{played_at}\n"
                 f"Mode: {entry.get('mode', '-')} | Variant: {entry.get('variant', '-')}\n"
+                f"Bot difficulty: {entry.get('bot_level') or '-'}\n"
                 f"{result_line} ({entry.get('reason', '-')})\n"
                 f"Moves: {entry.get('move_count', 0)}"
             )
-            self.history_list.addItem(QListWidgetItem(text))
+            item = QListWidgetItem(text)
+            item.setData(Qt.UserRole, entry)
+            self.history_list.addItem(item)
+
+    def _on_item_clicked(self, item):
+        entry = item.data(Qt.UserRole)
+        if not isinstance(entry, dict):
+            return
+        self.game_selected.emit(entry)
+        self.accept()

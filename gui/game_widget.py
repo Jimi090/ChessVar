@@ -16,11 +16,12 @@ class GameWidget(QWidget):
         chess.QUEEN: 9,
     }
 
-    def __init__(self, game, back_to_menu_callback=None):
+    def __init__(self, game, back_to_menu_callback=None, review_only=False):
         super().__init__()
 
         self.game = game
         self.back_to_menu_callback = back_to_menu_callback
+        self.review_only = review_only
         self.review_index = len(self.game.board.move_stack)
 
         layout = QHBoxLayout(self)
@@ -50,6 +51,10 @@ class GameWidget(QWidget):
         self._setup_shortcuts()
 
         self.refresh_sidebar()
+        if self.review_only:
+            self.side_panel.new_game_btn.setEnabled(False)
+            self.board.interaction_enabled = False
+            self.board.interaction_block_reason = "history"
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -90,6 +95,8 @@ class GameWidget(QWidget):
             )
 
     def start_new_game(self):
+        if self.review_only:
+            return
         self._history_recorded_for_current_game = False
         self.board.close_overlay()
         self.board.cancel_pending_bot_moves()
@@ -176,8 +183,12 @@ class GameWidget(QWidget):
 
     def _render_review_position(self, previous_index=None):
         board_to_render = self._board_at(self.review_index)
-        self.board.interaction_enabled = self.review_index == len(self.game.board.move_stack)
-        self.board.interaction_block_reason = None if self.board.interaction_enabled else "history"
+        if self.review_only:
+            self.board.interaction_enabled = False
+            self.board.interaction_block_reason = "history"
+        else:
+            self.board.interaction_enabled = self.review_index == len(self.game.board.move_stack)
+            self.board.interaction_block_reason = None if self.board.interaction_enabled else "history"
 
         should_animate = (
                 previous_index is not None
@@ -240,5 +251,7 @@ class GameWidget(QWidget):
             winner=result.get("winner"),
             reason=result.get("reason", "-"),
             move_count=len(self.game.board.move_stack),
+            moves=[move.uci() for move in self.game.board.move_stack],
+            bot_level=self.game.bot_level if self.game.vs_bot else None,
         )
         self._history_recorded_for_current_game = True

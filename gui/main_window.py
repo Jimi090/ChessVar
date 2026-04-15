@@ -68,7 +68,33 @@ class MainWindow(QMainWindow):
 
     def show_game_history(self):
         dialog = GameHistoryDialog(self)
+        dialog.game_selected.connect(self.open_historical_game)
         dialog.exec()
 
     def show_main_menu(self):
         self.stack.setCurrentWidget(self.menu)
+
+    def open_historical_game(self, entry):
+        variant_name = entry.get("variant", "standard").lower()
+        game = GameState(chess, variant_name)
+        game.vs_bot = "bot" in entry.get("mode", "").lower()
+        game.bot_level = entry.get("bot_level") or game.bot_level
+        game.player_pov = "White"
+
+        for move_uci in entry.get("moves", []):
+            try:
+                move = chess.Move.from_uci(move_uci)
+            except ValueError:
+                break
+            if move not in game.board.legal_moves:
+                break
+            game.board.push(move)
+
+        self.game_widget = GameWidget(
+            game,
+            back_to_menu_callback=self.show_main_menu,
+            review_only=True,
+        )
+        self.stack.addWidget(self.game_widget)
+        self.stack.setCurrentWidget(self.game_widget)
+

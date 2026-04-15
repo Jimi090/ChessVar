@@ -22,7 +22,18 @@ class GameHistoryStore:
         return entries
 
     @classmethod
-    def add_entry(cls, *, variant, mode, result_type, winner, reason, move_count):
+    def add_entry(
+            cls,
+            *,
+            variant,
+            mode,
+            result_type,
+            winner,
+            reason,
+            move_count,
+            moves=None,
+            bot_level=None,
+    ):
         entries = cls.load()
         entries.insert(
             0,
@@ -34,6 +45,8 @@ class GameHistoryStore:
                 "winner": winner,
                 "reason": reason,
                 "move_count": move_count,
+                "moves": moves or [],
+                "bot_level": bot_level,
             },
         )
         cls._save(entries)

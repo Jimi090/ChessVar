@@ -4,6 +4,7 @@ import random
 from pathlib import Path
 import chess
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -211,8 +212,12 @@ class PuzzleWidget(QWidget):
         panel_width = int(width * 0.22)
         self.right_panel.setFixedWidth(max(260, min(420, panel_width)))
         button_height = int(44 * scale)
+        button_font_size = max(11, int(16 * scale))
+        menu_btn_font_size = max(14, int(22 * scale))
         for button in (self.hint_btn, self.solution_btn, self.next_btn, self.back_btn):
             button.setMinimumHeight(button_height)
+            button.setFont(QFont("Arial", button_font_size, QFont.Bold))
+        self.menu_button.setFont(QFont("Arial", menu_btn_font_size))
 
     def _navigate(self, section):
         if self.navigate_callback:
@@ -372,4 +377,3 @@ class PuzzleWidget(QWidget):
         self.hint_btn.setEnabled(True)
         self.solution_btn.setEnabled(True)
         self._load_current_puzzle()
-
