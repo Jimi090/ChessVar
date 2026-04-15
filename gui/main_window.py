@@ -3,6 +3,7 @@ from PySide6.QtGui import QKeySequence, QShortcut
 from gui.main_menu import MainMenu
 from gui.game_widget import GameWidget
 from gui.puzzle_widget import PuzzleWidget
+from gui.game_history_dialog import GameHistoryDialog
 from game.game import GameState
 import chess
 import chess.variant
@@ -53,6 +54,8 @@ class MainWindow(QMainWindow):
     def handle_section_selected(self, section):
         if section == "puzzle":
             self.show_puzzle_mode()
+        elif section == "history":
+            self.show_game_history()
         else:
             self.show_main_menu()
 
@@ -61,6 +64,11 @@ class MainWindow(QMainWindow):
             self.puzzle_widget = PuzzleWidget(navigate_callback=self.handle_section_selected)
             self.stack.addWidget(self.puzzle_widget)
         self.stack.setCurrentWidget(self.puzzle_widget)
+
+
+    def show_game_history(self):
+        dialog = GameHistoryDialog(self)
+        dialog.exec()
 
     def show_main_menu(self):
         self.stack.setCurrentWidget(self.menu)

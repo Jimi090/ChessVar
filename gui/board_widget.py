@@ -14,6 +14,7 @@ import random
 class ChessBoardWidget(QGraphicsView):
     move_played = Signal()
     interaction_blocked = Signal(str)
+    game_finished = Signal(dict)
     BOT_LEVEL_SETTINGS = {
         "Beginner": {"strategy": "random", "think_time": 0.0},
         "Novice": {"strategy": "engine", "think_time": 0.00001},
@@ -46,6 +47,8 @@ class ChessBoardWidget(QGraphicsView):
         self._history_animation_timer = None
         self._bot_workers = set()
         self._bot_request_id = 0
+        self.board_fill_ratio = 0.78
+        self.max_board_pixels = 880
 
     def _set_board_pixel_size(self, pixel_size):
         self.square_size = max(24, pixel_size // 8)
@@ -58,7 +61,8 @@ class ChessBoardWidget(QGraphicsView):
         available_size = min(self.viewport().width(), self.viewport().height())
         if available_size <= 0:
             return
-        target_size = max(192, int(available_size * 0.86))
+        target_size = max(192, int(available_size * self.board_fill_ratio))
+        target_size = min(target_size, self.max_board_pixels)
         self._set_board_pixel_size(target_size)
         self._render_current_position()
 
@@ -412,6 +416,8 @@ class ChessBoardWidget(QGraphicsView):
         else:
             title = "Draw"
             reason = result["reason"]
+
+        self.game_finished.emit(result)
 
         self.overlay = GameOverOverlay(self.viewport(), title, reason)
         self.overlay.setGeometry(self.viewport().rect())

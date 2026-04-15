@@ -203,8 +203,10 @@ class MainMenu(QWidget):
                 """)
         play_action = menu.addAction("Play Game")
         puzzle_action = menu.addAction("Chess Puzzles")
+        history_action = menu.addAction("Game History")
         play_action.triggered.connect(lambda: self.section_selected.emit("game"))
         puzzle_action.triggered.connect(lambda: self.section_selected.emit("puzzle"))
+        history_action.triggered.connect(lambda: self.section_selected.emit("history"))
         self.menu_button.setMenu(menu)
 
         top_bar.addWidget(self.menu_button, alignment=Qt.AlignLeft | Qt.AlignTop)

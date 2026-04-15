@@ -86,8 +86,10 @@ class PuzzleWidget(QWidget):
         """)
         play_action = menu.addAction("Play Game")
         puzzle_action = menu.addAction("Chess Puzzles")
+        history_action = menu.addAction("Game History")
         play_action.triggered.connect(lambda: self._navigate("game"))
         puzzle_action.triggered.connect(lambda: self._navigate("puzzle"))
+        history_action.triggered.connect(lambda: self._navigate("history"))
         self.menu_button.setMenu(menu)
 
         top_bar.addWidget(self.menu_button, alignment=Qt.AlignLeft | Qt.AlignTop)
@@ -99,7 +101,9 @@ class PuzzleWidget(QWidget):
         content.setAlignment(Qt.AlignCenter)
         page_layout.addLayout(content, stretch=1)
 
-        content.addWidget(self.board_widget, stretch=3, alignment=Qt.AlignCenter)
+        self.board_widget.board_fill_ratio = 0.8
+        self.board_widget.max_board_pixels = 840
+        content.addWidget(self.board_widget, stretch=3)
 
         self.right_panel = QFrame()
         self.right_panel.setMinimumWidth(260)

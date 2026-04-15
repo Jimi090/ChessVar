@@ -3,6 +3,7 @@ from PySide6.QtCore import QSignalBlocker, Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from gui.board_widget import ChessBoardWidget
 from gui.side_panel import SidePanel
+from game.game_history import GameHistoryStore
 import chess
 import chess.pgn
 
@@ -26,6 +27,8 @@ class GameWidget(QWidget):
         self.main_layout = layout
 
         self.board = ChessBoardWidget(game)
+        self.board.board_fill_ratio = 0.8
+        self.board.max_board_pixels = 860
         self.side_panel = SidePanel(game)
 
         self.board.render_position(self.game.get_display_fen(), game.player_pov)
@@ -42,6 +45,8 @@ class GameWidget(QWidget):
         self.side_panel.export_pgn_requested.connect(self.export_pgn)
         self.board.move_played.connect(self.on_move_played)
         self.board.interaction_blocked.connect(self.on_interaction_blocked)
+        self.board.game_finished.connect(self.on_game_finished)
+        self._history_recorded_for_current_game = False
         self._setup_shortcuts()
 
         self.refresh_sidebar()
@@ -85,6 +90,7 @@ class GameWidget(QWidget):
             )
 
     def start_new_game(self):
+        self._history_recorded_for_current_game = False
         self.board.close_overlay()
         self.board.cancel_pending_bot_moves()
         self.game.reset_board()
@@ -220,3 +226,19 @@ class GameWidget(QWidget):
 
         with open(filename, "w", encoding="utf-8") as pgn_file:
             pgn_file.write(str(game_node))
+
+
+    def on_game_finished(self, result):
+        if self._history_recorded_for_current_game:
+            return
+
+        mode = "Player vs Bot" if self.game.vs_bot else "Player vs Player"
+        GameHistoryStore.add_entry(
+            variant=self.game.variant_display_name,
+            mode=mode,
+            result_type=result.get("type", ""),
+            winner=result.get("winner"),
+            reason=result.get("reason", "-"),
+            move_count=len(self.game.board.move_stack),
+        )
+        self._history_recorded_for_current_game = True
