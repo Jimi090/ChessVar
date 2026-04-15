@@ -353,7 +353,10 @@ class MainMenu(QWidget):
         rules_height = int(36 * scale)
         main_btn_font = max(12, int(18 * scale))
         aux_btn_font = max(10, int(12 * scale))
-        menu_btn_font = max(14, int(22 * scale))
+        menu_btn_font = max(18, int(28 * scale))
+        menu_btn_padding_v = max(5, int(6 * scale))
+        menu_btn_padding_h = max(12, int(16 * scale))
+        menu_btn_radius = max(10, int(12 * scale))
 
         self.title.setStyleSheet(f"font-size: {title_size}px; font-weight: bold; color: #ffffff;")
         self.subtitle.setStyleSheet(f"font-size: {subtitle_size}px; color: #b8b8b8;")
@@ -364,6 +367,19 @@ class MainMenu(QWidget):
         self.variant_rules_btn.setFont(QFont("Arial", aux_btn_font))
         self.shortcuts_btn.setFont(QFont("Arial", aux_btn_font))
         self.menu_button.setFont(QFont("Arial", menu_btn_font))
+        self.menu_button.setStyleSheet(f"""
+                    QToolButton {{
+                        background-color: #1e1e1e;
+                        border: 1px solid #333;
+                        border-radius: {menu_btn_radius}px;
+                        font-size: {menu_btn_font}px;
+                        color: #e0e0e0;
+                        padding: {menu_btn_padding_v}px {menu_btn_padding_h}px;
+                    }}
+                    QToolButton:hover {{
+                        background-color: #2a2a2a;
+                    }}
+                """)
 
     def update_bot_visibility(self):
         is_bot = "Bot" in self.mode_combo.currentText()

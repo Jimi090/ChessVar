@@ -28,13 +28,11 @@ class GameWidget(QWidget):
         self.main_layout = layout
 
         self.board = ChessBoardWidget(game)
-        self.board.board_fill_ratio = 0.8
-        self.board.max_board_pixels = 860
         self.side_panel = SidePanel(game)
 
         self.board.render_position(self.game.get_display_fen(), game.player_pov)
 
-        layout.addWidget(self.board, stretch=4)
+        layout.addWidget(self.board, stretch=4, alignment=Qt.AlignVCenter)
         layout.addWidget(self.side_panel, stretch=2)
 
         self.side_panel.new_game_requested.connect(self.start_new_game)

@@ -102,9 +102,7 @@ class PuzzleWidget(QWidget):
         content.setAlignment(Qt.AlignCenter)
         page_layout.addLayout(content, stretch=1)
 
-        self.board_widget.board_fill_ratio = 0.8
-        self.board_widget.max_board_pixels = 840
-        content.addWidget(self.board_widget, stretch=3)
+        content.addWidget(self.board_widget, stretch=3, alignment=Qt.AlignVCenter)
 
         self.right_panel = QFrame()
         self.right_panel.setMinimumWidth(260)
@@ -213,11 +211,27 @@ class PuzzleWidget(QWidget):
         self.right_panel.setFixedWidth(max(260, min(420, panel_width)))
         button_height = int(44 * scale)
         button_font_size = max(11, int(16 * scale))
-        menu_btn_font_size = max(14, int(22 * scale))
+        menu_btn_font_size = max(18, int(28 * scale))
+        menu_btn_padding_v = max(5, int(6 * scale))
+        menu_btn_padding_h = max(12, int(16 * scale))
+        menu_btn_radius = max(10, int(12 * scale))
         for button in (self.hint_btn, self.solution_btn, self.next_btn, self.back_btn):
             button.setMinimumHeight(button_height)
             button.setFont(QFont("Arial", button_font_size, QFont.Bold))
         self.menu_button.setFont(QFont("Arial", menu_btn_font_size))
+        self.menu_button.setStyleSheet(f"""
+            QToolButton {{
+                background-color: #1e1e1e;
+                border: 1px solid #333;
+                border-radius: {menu_btn_radius}px;
+                font-size: {menu_btn_font_size}px;
+                color: #e0e0e0;
+                padding: {menu_btn_padding_v}px {menu_btn_padding_h}px;
+            }}
+            QToolButton:hover {{
+                background-color: #2a2a2a;
+            }}
+        """)
 
     def _navigate(self, section):
         if self.navigate_callback:

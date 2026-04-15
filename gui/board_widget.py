@@ -48,7 +48,7 @@ class ChessBoardWidget(QGraphicsView):
         self._bot_workers = set()
         self._bot_request_id = 0
         self.board_fill_ratio = 0.8
-        self.max_board_pixels = 880
+        self.max_board_pixels = None
 
     def _set_board_pixel_size(self, pixel_size):
         self.square_size = max(24, pixel_size // 8)
@@ -62,10 +62,13 @@ class ChessBoardWidget(QGraphicsView):
         viewport_height = self.viewport().height()
         if viewport_width <= 0 or viewport_height <= 0:
             return
-        target_size = int(viewport_height * self.board_fill_ratio)
-        target_size = min(target_size, viewport_width)
+        top_level_window = self.window()
+        window_height = top_level_window.height() if top_level_window else viewport_height
+        target_size = int(window_height * self.board_fill_ratio)
+        target_size = min(target_size, viewport_width, viewport_height)
         target_size = max(192, target_size)
-        target_size = min(target_size, self.max_board_pixels)
+        if self.max_board_pixels:
+            target_size = min(target_size, self.max_board_pixels)
         self._set_board_pixel_size(target_size)
         self._render_current_position()
 
