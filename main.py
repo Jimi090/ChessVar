@@ -34,14 +34,12 @@ def apply_dark_theme(app):
         "QToolTip { color: #f0f0f0; background-color: #1e1e1e; border: 1px solid #333333; }"
     )
 
-
 def main():
     app = QApplication(sys.argv)
     apply_dark_theme(app)
     window = MainWindow()
     window.show()
     return app.exec()
-
 
 if __name__ == "__main__":
     sys.exit(main())

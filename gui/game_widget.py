@@ -248,7 +248,7 @@ class GameWidget(QWidget):
             result_type=result.get("type", ""),
             winner=result.get("winner"),
             reason=result.get("reason", "-"),
-            move_count=len(self.game.board.move_stack),
+            move_count=int(len(self.game.board.move_stack)/2),
             moves=[move.uci() for move in self.game.board.move_stack],
             bot_level=self.game.bot_level if self.game.vs_bot else None,
         )
