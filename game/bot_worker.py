@@ -1,5 +1,8 @@
 from PySide6.QtCore import QThread, Signal
 import chess.engine
+import subprocess
+import sys
+
 
 class BotWorker(QThread):
     move_ready = Signal(object)
@@ -14,7 +17,11 @@ class BotWorker(QThread):
     def run(self):
         engine = None
         try:
-            engine = chess.engine.SimpleEngine.popen_uci(self.engine_path)
+            popen_kwargs = {}
+            if sys.platform.startswith("win"):
+                popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+            engine = chess.engine.SimpleEngine.popen_uci(self.engine_path, **popen_kwargs)
             result = engine.play(
                 self.board,
                 chess.engine.Limit(time=self.time_limit)

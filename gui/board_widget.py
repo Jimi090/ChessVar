@@ -1,7 +1,7 @@
 from PySide6.QtGui import QColor, QBrush, QPen, QPolygonF
 from PySide6.QtWidgets import QGraphicsView
 from PySide6.QtCore import Qt, Signal, QPointF, QTimer, QEvent
-from utils.path_utils import ensure_executable, resource_path
+from utils.path_utils import ensure_executable, resource_path, engine_binary_path
 from gui.game_over_overlay import GameOverOverlay
 from gui.piece_item import PieceItem
 from game.piece import Piece
@@ -522,7 +522,7 @@ class ChessBoardWidget(QGraphicsView):
             move = moves[random.randrange(0, len(moves))]
             self.on_bot_move(move)
             return
-        engine_path = ensure_executable(resource_path("engines/fairy-stockfish"))
+        engine_path = ensure_executable(engine_binary_path("fairy-stockfish"))
         worker = BotWorker(
             self.game.board,
             engine_path,

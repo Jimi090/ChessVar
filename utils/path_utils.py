@@ -16,6 +16,15 @@ def resource_path(relative_path: str) -> str:
     return str(project_root() / relative_path)
 
 
+def engine_binary_path(engine_stem: str) -> str:
+    base_path = Path(resource_path(f"engines/{engine_stem}"))
+    if sys.platform.startswith("win"):
+        windows_path = base_path.with_suffix(".exe")
+        if windows_path.exists():
+            return str(windows_path)
+    return str(base_path)
+
+
 def ensure_executable(path: str) -> str:
     executable_path = Path(path)
     if executable_path.exists():
