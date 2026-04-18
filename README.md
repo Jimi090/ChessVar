@@ -1,15 +1,13 @@
 # ChessVar
-**The game is designed to be played in small window**
-
-**ChessVar** is a desktop chess application supporting popular chess variants.
-
-## AI USE
-**AI(ChatGPT) was used for some code generation, debugging and graphics(logos).** 
+**ChessVar** is a desktop chess application that supports multiple chess variants, puzzle training, and saved game history.
+### AI USE
+AI(ChatGPT) was used for some code generation, debugging and graphics(logos).
 ## Key Features
 
 - **Multiple game modes**
   - Player vs Player
   - Player vs Bot
+  - Chess Puzzles
 
 - **Supported chess variants**
   - Standard
@@ -24,14 +22,18 @@
 - **Interactive board UI**
   - Click-to-move and drag-and-drop piece interaction
   - Legal move highlighting
-  - Promotion dialog for pawns
-  - Board annotations with square highlights and arrows
+  - Pawn promotion dialog
+  - Board annotations: square highlights and arrows
+  - Dynamic board scaling based on window/screen size
+
 
 - **In-game tools**
   - Move history list with navigation
   - Jump backward and forward through played moves
   - Material balance display
   - Game-over overlay with result reason
+  - Keyboard shortcuts support
+  - Game history
 
 - **Export options**
   - Export current position as **FEN**
@@ -58,11 +60,19 @@ ChessVar/
 ├── engines/                 # Embedded chess engine binaries
 ├── game/                    # Core game state and bot worker logic
 ├── gui/                     # Main interface, board widgets, dialogs, overlays
+├── puzzles/                 # Built-in puzzle dataset
 ├── utils/                   # Utilities files
 ├── main.py                  # Application entry point
 └── README.md
 
 ```
+
+## Local Data Storage
+ChessVar stores user progress/history locally in:
+- `~/.chessvar/puzzle_progress.json`
+- `~/.chessvar/game_history.json`
+
+
 
 ## Asset Credit
 
